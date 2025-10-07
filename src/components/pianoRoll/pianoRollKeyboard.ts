@@ -8,6 +8,7 @@ export interface KeyboardControllerOptions {
   deleteSelected: () => void
   updateCommandStackButtons: () => void
   executeOverlapChanges: (state: PianoRollState, ids: Set<string>) => void
+  getContainer: () => HTMLElement | null
 }
 
 export interface KeyboardController {
@@ -23,7 +24,8 @@ export const createKeyboardController = ({
   redo,
   deleteSelected,
   updateCommandStackButtons,
-  executeOverlapChanges
+  executeOverlapChanges,
+  getContainer
 }: KeyboardControllerOptions): KeyboardController => {
   let attached = false
 
@@ -131,13 +133,20 @@ export const createKeyboardController = ({
 
   const attach = () => {
     if (attached) return
-    window.addEventListener('keydown', handleKeyDown)
+    const container = getContainer()
+    if (!container) return
+    
+    container.setAttribute('tabindex', '0')
+    container.addEventListener('keydown', handleKeyDown)
     attached = true
   }
 
   const detach = () => {
     if (!attached) return
-    window.removeEventListener('keydown', handleKeyDown)
+    const container = getContainer()
+    if (container) {
+      container.removeEventListener('keydown', handleKeyDown)
+    }
     attached = false
   }
 

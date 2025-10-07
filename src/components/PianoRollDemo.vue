@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'v
 import * as Tone from 'tone'
 import PianoRollRoot from './pianoRoll/PianoRollRoot.vue'
 import TimelinePreview from './TimelinePreview.vue'
+import ClaudeChat from './ClaudeChat.vue'
 import type { NoteDataInput, PianoRollState } from './pianoRoll/pianoRollState'
 import type { TimelineNote, TimelineState } from '../types/timeline'
 
@@ -224,6 +225,26 @@ const handleStateSync = (state: PianoRollState) => {
   stopPlayback()
 }
 
+const getNotes = (): NoteDataInput[] => {
+  return timelineState.notes.map(n => ({
+    id: n.id,
+    pitch: n.pitch,
+    position: n.position,
+    duration: n.duration,
+    velocity: n.velocity ?? 100
+  }))
+}
+
+const setNotesViaRef = (notes: NoteDataInput[]) => {
+  pianoRollRef.value?.setNotes(notes)
+}
+
+const getGrid = () => ({
+  maxLength: timelineState.grid.maxLength,
+  timeSignature: timelineState.grid.timeSignature,
+  subdivision: timelineState.grid.subdivision
+})
+
 onMounted(() => {
   Tone.Transport.loop = false
   Tone.Transport.bpm.value = 120
@@ -270,6 +291,14 @@ onBeforeUnmount(() => {
       <p class="note">Incoming notes and playhead data are mirrored here for custom visualizations.</p>
       <TimelinePreview :state="timelineState" />
     </section>
+
+    <section class="chatbot-card">
+      <ClaudeChat 
+        :get-notes="getNotes" 
+        :set-notes="setNotesViaRef" 
+        :get-grid="getGrid" 
+      />
+    </section>
   </div>
 </template>
 
@@ -291,7 +320,8 @@ section {
 }
 
 .piano-roll-card,
-.visualizer-card {
+.visualizer-card,
+.chatbot-card {
   display: flex;
   flex-direction: column;
   gap: 16px;

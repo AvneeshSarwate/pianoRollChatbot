@@ -181,7 +181,8 @@ const keyboardController = createKeyboardController({
   redo,
   deleteSelected,
   updateCommandStackButtons,
-  executeOverlapChanges
+  executeOverlapChanges,
+  getContainer: () => konvaContainer.value || null
 })
 
 const stageManager = new StageManager({
@@ -234,29 +235,33 @@ watch(() => props.height, (newHeight) => {
 
 // Expose methods for web component API
 const setNotes = (notes: NoteDataInput[]) => {
-  const usedIds = new Set<string>()
+  state.command.stack?.executeCommand('Set Notes', () => {
+    const usedIds = new Set<string>()
 
-  state.notes.clear()
+    state.notes.clear()
 
-  notes.forEach((noteInput, index) => {
-    // Generate unique ID if missing or duplicate
-    let id = noteInput.id || `note_${Date.now()}_${index}`
-    while (usedIds.has(id)) {
-      id = `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    }
-    usedIds.add(id)
+    notes.forEach((noteInput, index) => {
+      // Generate unique ID if missing or duplicate
+      let id = noteInput.id || `note_${Date.now()}_${index}`
+      while (usedIds.has(id)) {
+        id = `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }
+      usedIds.add(id)
 
-    // Add default velocity if missing
-    const note: NoteData = {
-      ...noteInput,
-      id,
-      velocity: noteInput.velocity ?? 100
-    }
+      // Add default velocity if missing
+      const note: NoteData = {
+        ...noteInput,
+        id,
+        velocity: noteInput.velocity ?? 100
+      }
 
-    state.notes.set(id, note)
+      state.notes.set(id, note)
+    })
+
+    state.needsRedraw = true
   })
-
-  state.needsRedraw = true
+  
+  updateCommandStackButtons()
   emitStateUpdate()
 }
 
@@ -407,6 +412,12 @@ defineExpose({
   cursor: default;
   box-sizing: border-box;
   border-radius: 8px;
+  outline: none;
+}
+
+.piano-roll-container:focus-visible {
+  border-color: #4a6cf7;
+  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.2);
 }
 
 .piano-roll-container.is-disabled {
