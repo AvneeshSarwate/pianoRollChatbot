@@ -2,11 +2,13 @@
 import { ref, nextTick } from 'vue'
 import { createClaudeChat } from '../composables/useClaudeChat'
 import type { NoteDataInput } from './pianoRoll/pianoRollState'
+import type { TransformRegistry } from '../composables/useTransformRegistry'
 
 interface Props {
   getNotes: () => NoteDataInput[]
   setNotes: (notes: NoteDataInput[]) => void
   getGrid: () => { maxLength: number; timeSignature: number; subdivision: number }
+  registry?: TransformRegistry
 }
 
 const props = defineProps<Props>()
@@ -14,7 +16,8 @@ const props = defineProps<Props>()
 const chat = createClaudeChat({
   getNotes: props.getNotes,
   setNotes: props.setNotes,
-  getGrid: props.getGrid
+  getGrid: props.getGrid,
+  registry: props.registry
 })
 
 const apiKey = ref('')

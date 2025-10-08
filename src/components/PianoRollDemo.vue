@@ -4,6 +4,8 @@ import * as Tone from 'tone'
 import PianoRollRoot from './pianoRoll/PianoRollRoot.vue'
 import TimelinePreview from './TimelinePreview.vue'
 import ClaudeChat from './ClaudeChat.vue'
+import TransformWorkbench from './TransformWorkbench.vue'
+import { createTransformRegistry } from '../composables/useTransformRegistry'
 import type { NoteDataInput, PianoRollState } from './pianoRoll/pianoRollState'
 import type { TimelineNote, TimelineState } from '../types/timeline'
 
@@ -245,6 +247,12 @@ const getGrid = () => ({
   subdivision: timelineState.grid.subdivision
 })
 
+const transformRegistry = createTransformRegistry({
+  getNotes,
+  setNotes: setNotesViaRef,
+  getGrid
+})
+
 onMounted(() => {
   Tone.Transport.loop = false
   Tone.Transport.bpm.value = 120
@@ -296,8 +304,13 @@ onBeforeUnmount(() => {
       <ClaudeChat 
         :get-notes="getNotes" 
         :set-notes="setNotesViaRef" 
-        :get-grid="getGrid" 
+        :get-grid="getGrid"
+        :registry="transformRegistry"
       />
+    </section>
+
+    <section class="transform-card">
+      <TransformWorkbench :registry="transformRegistry" />
     </section>
   </div>
 </template>
@@ -321,7 +334,8 @@ section {
 
 .piano-roll-card,
 .visualizer-card,
-.chatbot-card {
+.chatbot-card,
+.transform-card {
   display: flex;
   flex-direction: column;
   gap: 16px;

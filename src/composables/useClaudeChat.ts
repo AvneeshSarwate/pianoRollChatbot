@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import Anthropic from '@anthropic-ai/sdk'
 import type { NoteDataInput } from '../components/pianoRoll/pianoRollState'
+import type { TransformRegistry } from './useTransformRegistry'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -18,6 +19,7 @@ interface ClaudeChatConfig {
   getNotes: () => NoteDataInput[]
   setNotes: (notes: NoteDataInput[]) => void
   getGrid: () => GridInfo
+  registry?: TransformRegistry
 }
 
 const MAX_NOTES = 512
@@ -46,13 +48,13 @@ function validateClampNotes(inputNotes: any[], grid: GridInfo): NoteDataInput[] 
 }
 
 export function createClaudeChat(config: ClaudeChatConfig) {
-  const { getNotes, setNotes, getGrid } = config
+  const { getNotes, setNotes, getGrid, registry } = config
   
   const messages = ref<ChatMessage[]>([])
   const isWaiting = ref(false)
   const error = ref<string | null>(null)
   
-  const tools: Anthropic.Tool[] = [{
+  const midiNotesTool: Anthropic.Tool = {
     name: "midi_notes",
     description: "Read or write the piano roll MIDI notes. Use action='read' to fetch all notes. Use action='write' with a notes array to replace the current notes.",
     input_schema: {
@@ -99,11 +101,33 @@ export function createClaudeChat(config: ClaudeChatConfig) {
       },
       required: ["action"]
     }
-  }]
+  }
+  
+  const writeTransformTool: Anthropic.Tool = {
+    name: "write_transform_function",
+    description: "Create or overwrite a transform function in a given slot (0-7). Provide complete JavaScript code with a function named 'transform' that takes notes as first parameter, followed by numeric parameters. Include JSDoc comments with one line per parameter.",
+    input_schema: {
+      type: "object",
+      properties: {
+        slotIndex: {
+          type: "number",
+          minimum: 0,
+          maximum: 7,
+          description: "Slot index (0-7) where to write the transform"
+        },
+        code: {
+          type: "string",
+          description: "Complete JavaScript code defining the transform function"
+        }
+      },
+      required: ["slotIndex", "code"]
+    }
+  }
   
   function buildSystemPrompt(): string {
     const grid = getGrid()
-    return `You are a music composition assistant for a MIDI piano roll editor.
+    
+    let prompt = `You are a music composition assistant for a MIDI piano roll editor.
 
 IMPORTANT RULES:
 - Always use the midi_notes tool to read or write notes - never hallucinate note data
@@ -116,6 +140,54 @@ IMPORTANT RULES:
 - Keep responses concise and acknowledge changes after writing
 - Consider musical context when suggesting edits (key, rhythm, harmony)
 - When creating chords, use simultaneous notes at the same position`
+
+    if (registry) {
+      prompt += `
+
+TRANSFORM FUNCTIONS:
+Before modifying notes, determine the best approach:
+- For simple operations (add/remove individual notes, simple pitch/position changes), use midi_notes tool directly
+- For pattern-based operations (transpose all notes, quantize, humanize), check if an existing transform tool matches
+- For complex multi-step operations, consider combining multiple transform tools in sequence
+- Only create new transforms if no existing tool or combination fits the need
+
+Available transform tools:
+${registry.summarizeTransforms()}
+
+When using a transform tool:
+1. First, determine if you have all required parameter values
+2. If any required parameter is missing and cannot be reasonably inferred from context, ask the user for it
+3. Do NOT invoke the tool with placeholder or guessed values for missing required parameters
+4. Optional parameters can be omitted if not provided
+
+CREATING NEW TRANSFORMS:
+Use write_transform_function(code, slotIndex) only when:
+- The user explicitly asks you to create a transform function
+- No existing transform or combination can accomplish the task
+- The operation would be reusable for future requests
+
+Transform code requirements:
+- Must define: function transform(notes, ...numbers) { return transformedNotes; }
+- First parameter must be 'notes' (the input array)
+- Additional parameters must be numbers that configure the transformation
+- Must include JSDoc with @param tags for each parameter
+- Should return a new array, not modify input array
+
+Example transform structure:
+/**
+ * Brief description of what this does.
+ * @param {Note[]} notes - Input notes array
+ * @param {number} paramName - Description and recommended range (e.g., 0-127, -12 to +12)
+ */
+function transform(notes, paramName) {
+  return notes.map(n => ({
+    ...n,
+    // transformation logic here
+  }));
+}`
+    }
+    
+    return prompt
   }
   
   async function executeMidiNotesTool(input: any) {
@@ -164,6 +236,35 @@ IMPORTANT RULES:
         dangerouslyAllowBrowser: true
       })
       
+      // Build tools dynamically
+      const tools: Anthropic.Tool[] = [midiNotesTool]
+      
+      const handlers = new Map<string, (input: any) => Promise<any>>()
+      handlers.set('midi_notes', executeMidiNotesTool)
+      
+      if (registry) {
+        tools.push(writeTransformTool)
+        handlers.set('write_transform_function', async (input: any) => {
+          const result = registry.writeTransformFunction(input.slotIndex, input.code)
+          return {
+            status: result.valid ? 'validated' : 'invalid',
+            errors: result.errors,
+            toolName: result.valid ? `transform_slot_${input.slotIndex + 1}` : undefined,
+            params: result.params
+          }
+        })
+        
+        // Add transform tools
+        const transformTools = registry.getToolDefs()
+        tools.push(...transformTools)
+        
+        // Add transform handlers
+        const transformHandlers = registry.getToolHandlers()
+        transformHandlers.forEach((handler, name) => {
+          handlers.set(name, handler)
+        })
+      }
+      
       const conversationMessages: Anthropic.MessageParam[] = [
         { role: 'user', content: userText }
       ]
@@ -191,8 +292,9 @@ IMPORTANT RULES:
         const toolResults: Anthropic.ToolResultBlockParam[] = []
         
         for (const toolUse of toolUses) {
-          if (toolUse.name === 'midi_notes') {
-            const result = await executeMidiNotesTool(toolUse.input)
+          const handler = handlers.get(toolUse.name)
+          if (handler) {
+            const result = await handler(toolUse.input)
             toolResults.push({
               type: 'tool_result',
               tool_use_id: toolUse.id,
