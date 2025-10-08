@@ -187,12 +187,12 @@ Example transform structure:
  * Brief description of what this does.
  * @param {Note[]} notes - Input notes array
  * @param {number} paramName - Description and recommended range (e.g., 0-127, -12 to +12)
+ * * ... - more parameters, as long as they are all numbers (and you need a description line for each)
  */
 function myTransform(notes, paramName) {
-  return notes.map(n => ({
-    ...n,
-    // transformation logic here
-  }));
+  const newNotes = notes.map(n => ({...n}));
+  // transform newNotes here
+  return newNotes;
 }`
     }
     

@@ -48,12 +48,12 @@ const handleInsertTemplate = () => {
  * Brief description of what this does.
  * @param {Note[]} notes - Input notes array
  * @param {number} amount - Parameter description (e.g., -12 to +12)
+ * ... - more parameters, as long as they are all numbers (and you need a description line for each)
  */
 function myTransform(notes, amount) {
-  return notes.map(n => ({
-    ...n,
-    // transformation logic here
-  }));
+  const newNotes = notes.map(n => ({...n}));
+  // transform newNotes here
+  return newNotes;
 }`
   
   props.registry.setCode(activeTab.value, template)
@@ -79,6 +79,7 @@ const setParamInput = (paramName: string, value: number) => {
     <div class="workbench-header">
       <h3>Transform Functions</h3>
       <div class="header-actions">
+        <span class="template-hint">Click this to see the transform function format →</span>
         <button 
           @click="handleInsertTemplate" 
           class="template-btn"
@@ -209,6 +210,13 @@ const setParamInput = (paramName: string, value: number) => {
 .header-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.template-hint {
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
 }
 
 .template-btn {
