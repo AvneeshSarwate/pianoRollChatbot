@@ -115,13 +115,15 @@ const setParamInput = (paramName: string, value: number) => {
           </div>
         </div>
 
-        <Codemirror
-          :model-value="activeSlot.code"
-          @update:model-value="handleCodeChange"
-          :extensions="extensions"
-          :style="{ height: '300px', fontSize: '14px' }"
-          placeholder="Write your transform function here..."
-        />
+        <div class="editor-wrapper">
+          <Codemirror
+            :model-value="activeSlot.code"
+            @update:model-value="handleCodeChange"
+            :extensions="extensions"
+            :style="{ height: '300px', fontSize: '14px' }"
+            placeholder="Write your transform function here..."
+          />
+        </div>
 
         <div v-if="activeSlot.errors.length > 0" class="errors">
           <h4>Validation Errors:</h4>
@@ -291,6 +293,11 @@ const setParamInput = (paramName: string, value: number) => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.editor-wrapper {
+  overflow: auto;
+  border-radius: 8px;
 }
 
 .editor-header {

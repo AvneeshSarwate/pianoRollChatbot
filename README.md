@@ -1,5 +1,5 @@
-# Vue 3 + TypeScript + Vite
+# LLM + Piano roll chatbot
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+[Demo video](https://www.dropbox.com/scl/fi/11t27rxos5muh378vfewh/llm_midi_mangler.mp4?rlkey=eo8d2he8v6j04skgvcg20466b&dl=0)
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+This is an LLM powered MIDI mangling workbench. A central piano roll lets you manually write out MIDI, and it is played back using <a href="https://tonejs.github.io/" target="_blank" rel="noreferrer">Tone.js</a>. A chatbot powered by Claude Sonnet can read and write from the piano roll with tool calls. Additionally, there is a workbench at the bottom of the page that lets you define custom functions for transforming  the piano roll. The chatbot can write new functions into specific slots, or can even call your functions as tools (instead of generating raw MIDI as an LLM response). You can also manually apply your transformation functions with the controls under the text editor.

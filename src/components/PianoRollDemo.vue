@@ -2,7 +2,6 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import * as Tone from 'tone'
 import PianoRollRoot from './pianoRoll/PianoRollRoot.vue'
-import TimelinePreview from './TimelinePreview.vue'
 import ClaudeChat from './ClaudeChat.vue'
 import TransformWorkbench from './TransformWorkbench.vue'
 import { createTransformRegistry } from '../composables/useTransformRegistry'
@@ -275,51 +274,60 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="layout">
-    <section class="piano-roll-card">
-      <div class="controls">
-        <button @click="handlePlayClick" :disabled="isPlaying || !hasNotes">Play</button>
-        <button @click="handleStopClick" :disabled="!isPlaying">Stop</button>
-        <span class="status" :class="{ playing: isPlaying }">{{ statusLabel }}</span>
-      </div>
-      <p class="note">Use the green queue playhead inside the roll to choose a start point, then press play.</p>
-      <p class="meta">Queue start (quarter notes): <span>{{ queueDisplay }}</span></p>
+    <div class="piano-roll-row">
+      <section class="piano-roll-card">
+        <div class="controls">
+          <button @click="handlePlayClick" :disabled="isPlaying || !hasNotes">Play</button>
+          <button @click="handleStopClick" :disabled="!isPlaying">Stop</button>
+          <span class="status" :class="{ playing: isPlaying }">{{ statusLabel }}</span>
+        </div>
+        <p class="note">Use the green queue playhead inside the roll to choose a start point, then press play.</p>
+        <p class="meta">Queue start (quarter notes): <span>{{ queueDisplay }}</span></p>
 
-      <PianoRollRoot
-        ref="pianoRollRef"
-        :width="900"
-        :height="340"
-        :show-control-panel="true"
-        :interactive="true"
-        :sync-state="handleStateSync"
-      />
-    </section>
+        <PianoRollRoot
+          ref="pianoRollRef"
+          :width="900"
+          :height="340"
+          :show-control-panel="true"
+          :interactive="true"
+          :sync-state="handleStateSync"
+        />
+      </section>
+    </div>
 
-    <section class="visualizer-card">
-      <h2 class="visualizer-title">p5.js Timeline Preview</h2>
-      <p class="note">Incoming notes and playhead data are mirrored here for custom visualizations.</p>
-      <TimelinePreview :state="timelineState" />
-    </section>
+    <div class="bottom-row">
+      <section class="transform-card">
+        <TransformWorkbench :registry="transformRegistry" />
+      </section>
 
-    <section class="chatbot-card">
-      <ClaudeChat 
-        :get-notes="getNotes" 
-        :set-notes="setNotesViaRef" 
-        :get-grid="getGrid"
-        :registry="transformRegistry"
-      />
-    </section>
-
-    <section class="transform-card">
-      <TransformWorkbench :registry="transformRegistry" />
-    </section>
+      <section class="chatbot-card">
+        <ClaudeChat 
+          :get-notes="getNotes" 
+          :set-notes="setNotesViaRef" 
+          :get-grid="getGrid"
+          :registry="transformRegistry"
+        />
+      </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .layout {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 24px;
+}
+
+.piano-roll-row {
+  display: flex;
+  justify-content: center;
+}
+
+.bottom-row {
+  display: flex;
+  gap: 24px;
+  padding: 0 24px;
 }
 
 section {
@@ -328,12 +336,16 @@ section {
   border-radius: 16px;
   box-shadow: 0 18px 36px rgba(12, 14, 32, 0.12);
   padding: 20px;
-  flex: 1 1 480px;
   box-sizing: border-box;
 }
 
+.transform-card,
+.chatbot-card {
+  flex: 1;
+  min-width: 0;
+}
+
 .piano-roll-card,
-.visualizer-card,
 .chatbot-card,
 .transform-card {
   display: flex;
@@ -401,20 +413,10 @@ section {
   font-variant-numeric: tabular-nums;
 }
 
-.visualizer-title {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #303553;
-}
-
 @media (max-width: 900px) {
-  .layout {
+  .bottom-row {
     flex-direction: column;
-  }
-
-  section {
-    flex: 1 1 auto;
+    padding: 0;
   }
 }
 </style>
