@@ -25,6 +25,7 @@ const userInput = ref('')
 const messagesContainer = ref<HTMLDivElement | null>(null)
 const showApiKeyWarning = ref(true)
 const showApiKey = ref(false)
+const showSecurityModal = ref(false)
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -100,7 +101,84 @@ const formatTime = (timestamp: number) => {
         <div class="warning-content">
           <strong>Security Warning:</strong> This API key is exposed in your browser. 
           Use a limited, revocable key. Never use production keys.
+          <a href="#" @click.prevent="showSecurityModal = true" class="learn-more-link">Click here to learn more</a>
           <button @click="showApiKeyWarning = false" class="dismiss-btn">Dismiss</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Modal -->
+    <div v-if="showSecurityModal" class="modal-overlay" @click="showSecurityModal = false">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h2>⚠️ Important notice about your API key</h2>
+          <button @click="showSecurityModal = false" class="modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <section>
+            <h3>Where your key lives:</h3>
+            <p>This app runs entirely in your browser. Your API key is kept in memory only and is not saved to localStorage, cookies, or our servers. When you close or refresh the page, the key is discarded.</p>
+          </section>
+
+          <section>
+            <h3>What that still means in practice:</h3>
+            <p>Even without storage, a key used in the browser can be exposed in several ways:</p>
+            <ul>
+              <li><strong>Browser extensions</strong> – Any extension with permission to run on this page can read the DOM, intercept network requests, or capture keystrokes. Malicious or over-permissive extensions can exfiltrate your key and chat data.</li>
+              <li><strong>Developer tools & logs</strong> – Authorization headers and request bodies may be visible in the Network tab. Copy/paste history, crash reports, debugging overlays, or third-party analytics/debug scripts could capture sensitive data.</li>
+              <li><strong>Clipboard & screenshots</strong> – Some clipboard managers keep history; screen recorders or "share your screen" sessions can reveal the key or responses.</li>
+              <li><strong>Malware or shared devices</strong> – Keyloggers and remote-control tools can grab what you type. Anyone with access to your machine or account profile could view active sessions.</li>
+              <li><strong>Third-party scripts</strong> – If you enable content blockers or load-helper scripts, be aware that any third-party script running on the page could read page memory.</li>
+              <li><strong>Network visibility</strong> – We use HTTPS, but corporate proxies, antivirus, or traffic-capturing tools on your device/network could still inspect requests.</li>
+              <li><strong>Usage risk</strong> – If your key leaks, someone else can spend your credits, hit your rate limits, or access models/features under your account until you revoke it.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>How to reduce your risk (recommended):</h3>
+            <ul>
+              <li>
+                <strong>Use a limited, revocable key:</strong>
+                <p>Create a non-production key with the lowest possible permissions, strict quotas/spend caps, and model/endpoint allow-lists (if supported). Be ready to revoke it at any time.</p>
+              </li>
+              <li>
+                <strong>Prefer a clean browser session:</strong>
+                <p>Use a private/incognito window with extensions disabled. Don't save the key between sessions. Avoid pasting it into multiple tabs.</p>
+              </li>
+              <li>
+                <strong>Keep it off the clipboard:</strong>
+                <p>Paste once if needed, then clear it. Disable clipboard history managers while using the app.</p>
+              </li>
+              <li>
+                <strong>Don't open DevTools while using the key:</strong>
+                <p>This reduces the chance of accidental logging or copying of request data.</p>
+              </li>
+              <li>
+                <strong>Verify the site:</strong>
+                <p>Make sure you're on the correct domain (HTTPS lock icon, expected URL). Don't use the app from untrusted links or if your browser shows security warnings.</p>
+              </li>
+              <li>
+                <strong>Rotate and monitor:</strong>
+                <p>Rotate keys periodically, and keep an eye on your provider's usage/billing dashboard for unexpected spikes.</p>
+              </li>
+              <li>
+                <strong>Prefer a server-side proxy for production:</strong>
+                <p>For real projects, use a backend that keeps provider keys on the server and issues short-lived, scoped tokens to the browser. That's the only robust way to protect a production key.</p>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>By proceeding, you acknowledge:</h3>
+            <ul>
+              <li>You understand your key is used client-side and may be visible to software on your device (including extensions) and in browser tools.</li>
+              <li>You accept the risk of unintended exposure and potential charges if the key is leaked.</li>
+              <li>You agree to use a limited, revocable, non-production key and to revoke it immediately if you suspect misuse.</li>
+            </ul>
+          </section>
+        </div>
+        <div class="modal-footer">
+          <button @click="showSecurityModal = false" class="modal-ok-btn">I Understand</button>
         </div>
       </div>
     </div>
@@ -309,6 +387,146 @@ const formatTime = (timestamp: number) => {
 .dismiss-btn:hover {
   background: #856404;
   color: #fff;
+}
+
+.learn-more-link {
+  color: #856404;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+.learn-more-link:hover {
+  color: #664d03;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 700px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid #e0e4f0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #303553;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 2rem;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.modal-close:hover {
+  background: #f5f6f9;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  line-height: 1.6;
+}
+
+.modal-body section {
+  margin-bottom: 24px;
+}
+
+.modal-body section:last-child {
+  margin-bottom: 0;
+}
+
+.modal-body h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  color: #303553;
+  font-weight: 600;
+}
+
+.modal-body p {
+  margin: 8px 0;
+  color: #4d5268;
+  font-size: 0.95rem;
+}
+
+.modal-body ul {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.modal-body li {
+  margin: 12px 0;
+  color: #4d5268;
+  font-size: 0.95rem;
+}
+
+.modal-body li p {
+  margin: 4px 0 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 2px solid #e0e4f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-ok-btn {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #4a6cf7, #667aff);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 12px rgba(74, 108, 247, 0.2);
+}
+
+.modal-ok-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(74, 108, 247, 0.3);
 }
 
 .messages-container {

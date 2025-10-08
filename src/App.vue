@@ -13,6 +13,8 @@ import PianoRollDemo from './components/PianoRollDemo.vue'
         there is a workbench at the bottom of the page that lets you define custom functions for transforming 
         the piano roll. The chatbot can write new functions into specific slots, or can even call your functions 
         as tools (instead of generating raw MIDI as an LLM response).
+        <br/><br/>
+        The source code for this is on <a href="https://github.com/AvneeshSarwate/pianoRollChatbot" target="_blank" rel="noreferrer">GitHub</a>.
       </p>
     </div>
     
