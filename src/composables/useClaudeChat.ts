@@ -132,6 +132,7 @@ export function createClaudeChat(config: ClaudeChatConfig) {
 IMPORTANT RULES:
 - Always use the midi_notes tool to read or write notes - never hallucinate note data
 - Grid constraints: maxLength=${grid.maxLength} quarter notes, timeSignature=${grid.timeSignature}/4, subdivision=1/${grid.subdivision}
+- Time units: 1.0 represents one quarter note across all positions and durations
 - When writing notes:
   - Pitch must be 0-127 (60=middle C, 62=D, 64=E, 65=F, 67=G, 69=A, 71=B, 72=high C)
   - Position must be >= 0 and position+duration should stay within maxLength
