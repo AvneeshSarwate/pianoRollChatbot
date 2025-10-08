@@ -3,10 +3,17 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { NoteDataInput } from '../components/pianoRoll/pianoRollState'
 import type { TransformRegistry } from './useTransformRegistry'
 
+export interface ToolCall {
+  name: string
+  displayName?: string
+  input: Record<string, any>
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   text: string
   timestamp: number
+  toolCalls?: ToolCall[]
 }
 
 interface GridInfo {
@@ -168,7 +175,8 @@ Use write_transform_function(code, slotIndex) only when:
 - The operation would be reusable for future requests
 
 Transform code requirements:
-- Must define: function transform(notes, ...numbers) { return transformedNotes; }
+- Must define a function with notes as the first parameter, followed by numeric parameters
+- Function can have any name (e.g., transpose, quantize, humanize)
 - First parameter must be 'notes' (the input array)
 - Additional parameters must be numbers that configure the transformation
 - Must include JSDoc with @param tags for each parameter
@@ -180,7 +188,7 @@ Example transform structure:
  * @param {Note[]} notes - Input notes array
  * @param {number} paramName - Description and recommended range (e.g., 0-127, -12 to +12)
  */
-function transform(notes, paramName) {
+function myTransform(notes, paramName) {
   return notes.map(n => ({
     ...n,
     // transformation logic here
@@ -278,12 +286,34 @@ function transform(notes, paramName) {
         messages: conversationMessages
       })
       
+      const allToolCalls: ToolCall[] = []
+      
       for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
         const toolUses = response.content.filter(
           (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
         )
         
         if (toolUses.length === 0) break
+        
+        // Track tool calls with display names
+        for (const toolUse of toolUses) {
+          let displayName = toolUse.name
+          
+          // Get function name for transform tools
+          if (toolUse.name.startsWith('transform_slot_') && registry) {
+            const slotIndex = parseInt(toolUse.name.replace('transform_slot_', '')) - 1
+            const slot = registry.slots[slotIndex]
+            if (slot && slot.functionName) {
+              displayName = slot.functionName
+            }
+          }
+          
+          allToolCalls.push({
+            name: toolUse.name,
+            displayName,
+            input: toolUse.input as Record<string, any>
+          })
+        }
         
         conversationMessages.push({
           role: 'assistant',
@@ -326,7 +356,8 @@ function transform(notes, paramName) {
       messages.value.push({
         role: 'assistant',
         text: finalText || 'No response',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined
       })
       
     } catch (err: any) {

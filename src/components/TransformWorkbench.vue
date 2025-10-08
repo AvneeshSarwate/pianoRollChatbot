@@ -49,7 +49,7 @@ const handleInsertTemplate = () => {
  * @param {Note[]} notes - Input notes array
  * @param {number} amount - Parameter description (e.g., -12 to +12)
  */
-function transform(notes, amount) {
+function myTransform(notes, amount) {
   return notes.map(n => ({
     ...n,
     // transformation logic here

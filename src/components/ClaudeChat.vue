@@ -128,6 +128,17 @@ const formatTime = (timestamp: number) => {
           <span class="role-label">{{ message.role === 'user' ? 'You' : 'AI Assistant' }}</span>
           <span class="timestamp">{{ formatTime(message.timestamp) }}</span>
         </div>
+        
+        <div v-if="message.toolCalls && message.toolCalls.length > 0" class="tool-calls">
+          <div class="tool-call-header">🔧 Tools used:</div>
+          <div v-for="(toolCall, idx) in message.toolCalls" :key="idx" class="tool-call">
+            <span class="tool-name">{{ toolCall.displayName || toolCall.name }}</span>
+            <span v-if="Object.keys(toolCall.input).length > 0" class="tool-params">
+              ({{ Object.entries(toolCall.input).map(([k, v]) => `${k}: ${v}`).join(', ') }})
+            </span>
+          </div>
+        </div>
+        
         <div class="message-text">{{ message.text }}</div>
       </div>
 
@@ -418,6 +429,41 @@ const formatTime = (timestamp: number) => {
   line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+.tool-calls {
+  margin-bottom: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.tool-call-header {
+  font-weight: 600;
+  margin-bottom: 4px;
+  opacity: 0.9;
+}
+
+.tool-call {
+  margin: 2px 0;
+  padding-left: 8px;
+}
+
+.tool-name {
+  font-weight: 600;
+  font-family: monospace;
+  color: #4a6cf7;
+}
+
+.message.user .tool-name {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.tool-params {
+  font-family: monospace;
+  opacity: 0.8;
+  margin-left: 4px;
 }
 
 .loading-dots::after {

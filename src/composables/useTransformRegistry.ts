@@ -18,6 +18,7 @@ interface ParamInfo {
 interface ValidationResult {
   valid: boolean
   errors: string[]
+  functionName?: string
   params?: ParamInfo[]
   jsdocSummary?: string
   compiled?: (notes: NoteDataInput[], ...args: number[]) => NoteDataInput[]
@@ -27,6 +28,7 @@ export interface TransformSlot {
   code: string
   isValid: boolean
   name: string
+  functionName?: string
   params: ParamInfo[]
   errors: string[]
   compiled?: (notes: NoteDataInput[], ...args: number[]) => NoteDataInput[]
@@ -127,15 +129,17 @@ function validateTransform(code: string): ValidationResult {
       }
     } as any)
     
-    // Find the transform function
+    // Find any function (not just "transform")
     let transformNode: any = null
+    let functionName: string | undefined
     let transformParams: string[] = []
     let leadingComment: any = null
     
     walk.simple(ast, {
       FunctionDeclaration(node: any) {
-        if (node.id && node.id.name === 'transform') {
+        if (node.id && !transformNode) {
           transformNode = node
+          functionName = node.id.name
           transformParams = node.params.map((p: any) => p.name)
           
           // Find preceding comment
@@ -147,9 +151,10 @@ function validateTransform(code: string): ValidationResult {
         }
       },
       VariableDeclarator(node: any) {
-        if (node.id && node.id.name === 'transform' && 
+        if (node.id && !transformNode &&
             node.init && (node.init.type === 'FunctionExpression' || node.init.type === 'ArrowFunctionExpression')) {
           transformNode = node.init
+          functionName = node.id.name
           transformParams = node.init.params.map((p: any) => p.name)
           
           // Find preceding comment
@@ -164,7 +169,7 @@ function validateTransform(code: string): ValidationResult {
     })
     
     if (!transformNode) {
-      errors.push('No function named "transform" found')
+      errors.push('No function found. Please define a function with notes as the first parameter.')
       return { valid: false, errors }
     }
     
@@ -204,8 +209,8 @@ function validateTransform(code: string): ValidationResult {
     const factory = new Function(
       '"use strict";\n' + 
       code + 
-      '\nif (typeof transform !== "function") throw new Error("transform is not defined");\n' +
-      'return transform;'
+      `\nif (typeof ${functionName} !== "function") throw new Error("${functionName} is not defined");\n` +
+      `return ${functionName};`
     )
     
     const compiledFn = factory()
@@ -213,13 +218,14 @@ function validateTransform(code: string): ValidationResult {
     // Smoke test
     const testResult = compiledFn([])
     if (!Array.isArray(testResult)) {
-      errors.push('Transform function must return an array')
+      errors.push('Function must return an array')
       return { valid: false, errors }
     }
     
     return {
       valid: true,
       errors: [],
+      functionName,
       params,
       jsdocSummary: summary,
       compiled: compiledFn as any
@@ -274,6 +280,7 @@ export function createTransformRegistry(config: TransformRegistryConfig) {
     
     if (result.valid && result.compiled) {
       slot.compiled = result.compiled
+      slot.functionName = result.functionName
       slot.params = result.params || []
       slot.jsdocSummary = result.jsdocSummary
     }
@@ -411,13 +418,14 @@ export function createTransformRegistry(config: TransformRegistryConfig) {
       if (!slot.isValid) continue
       
       const toolName = `transform_slot_${i + 1}`
+      const functionName = slot.functionName || 'unnamed'
       const summary = slot.jsdocSummary || 'User-defined transform'
       const paramList = slot.params
         .filter(p => p.name !== 'notes')
         .map(p => `${p.name}${p.description ? ` (${p.description})` : ''}`)
         .join(', ')
       
-      lines.push(`- ${toolName}: ${summary}${paramList ? ` | Params: ${paramList}` : ''}`)
+      lines.push(`- ${toolName} (${functionName}): ${summary}${paramList ? ` | Params: ${paramList}` : ''}`)
     }
     
     return lines.join('\n')
