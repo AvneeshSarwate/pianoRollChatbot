@@ -89,15 +89,7 @@ export function initializeLayers(state: PianoRollState, stage: Konva.Stage, onCo
   })
   overlayLayer.add(state.selection.selectionRect)
 
-  // Create queue playhead element (green)
   const pianoRollHeight = 128 * state.grid.noteHeight
-  state.queuePlayhead.element = new Konva.Line({
-    points: [0, 0, 0, pianoRollHeight],
-    stroke: '#00ff00',
-    strokeWidth: 2,
-    listening: false
-  })
-  overlayLayer.add(state.queuePlayhead.element)
 
   // Create live playhead element (orange)
   state.livePlayhead.element = new Konva.Line({
@@ -107,6 +99,15 @@ export function initializeLayers(state: PianoRollState, stage: Konva.Stage, onCo
     listening: false
   })
   overlayLayer.add(state.livePlayhead.element)
+
+  // Create queue playhead element (green)
+  state.queuePlayhead.element = new Konva.Line({
+    points: [0, 0, 0, pianoRollHeight],
+    stroke: '#33dd00',
+    strokeWidth: 2,
+    listening: false
+  })
+  overlayLayer.add(state.queuePlayhead.element)
 
   // Initialize command stack
   state.command.stack = new CommandStack(

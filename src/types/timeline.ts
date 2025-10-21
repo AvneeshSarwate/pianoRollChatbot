@@ -3,6 +3,7 @@ export interface TimelineNote {
   pitch: number
   position: number
   duration: number
+  selected: boolean
   velocity?: number
 }
 

@@ -18,6 +18,7 @@ export type NoteDataInput = {
   position: number
   duration: number
   velocity?: number
+  selected?: boolean
   metadata?: any
 }
 

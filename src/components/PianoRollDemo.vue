@@ -212,7 +212,8 @@ const handleStateSync = (state: PianoRollState) => {
       pitch: note.pitch,
       position: note.position,
       duration: note.duration,
-      velocity: note.velocity
+      velocity: note.velocity,
+      selected: state.selection.selectedIds.has(note.id)
     }))
     .sort((a, b) => a.position - b.position)
 
@@ -232,7 +233,8 @@ const getNotes = (): NoteDataInput[] => {
     pitch: n.pitch,
     position: n.position,
     duration: n.duration,
-    velocity: n.velocity ?? 100
+    velocity: n.velocity ?? 100,
+    selected: n.selected
   }))
 }
 

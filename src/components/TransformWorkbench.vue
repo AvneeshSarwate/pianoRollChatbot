@@ -242,11 +242,12 @@ const setParamInput = (paramName: string, value: number) => {
   gap: 4px;
   overflow-x: auto;
   padding: 4px 0;
+  margin-bottom: -1px;
 }
 
 .tab {
   background: #f5f6f9;
-  border: 1px solid #d5d9e6;
+  border: 1px solid #e0e4f0;
   border-radius: 6px 6px 0 0;
   padding: 8px 16px;
   font-size: 0.9rem;
@@ -265,7 +266,7 @@ const setParamInput = (paramName: string, value: number) => {
   background: #fff;
   color: #303553;
   font-weight: 600;
-  border-bottom-color: transparent;
+  border-bottom-color: #fff;
 }
 
 .tab.valid {
@@ -285,7 +286,7 @@ const setParamInput = (paramName: string, value: number) => {
   gap: 16px;
   background: #fff;
   border: 1px solid #e0e4f0;
-  border-radius: 8px;
+  border-radius: 0 8px 8px 8px;
   padding: 16px;
 }
 
