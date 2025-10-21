@@ -147,7 +147,7 @@ onUnmounted(() => {
 
 <style scoped>
 .piano-roll-item {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   gap: 12px;
   background: #ffffff;
@@ -156,6 +156,7 @@ onUnmounted(() => {
   padding: 16px;
   box-shadow: 0 4px 12px rgba(12, 14, 32, 0.08);
   transition: border-color 0.2s, box-shadow 0.2s;
+  width: fit-content;
 }
 
 .piano-roll-item.editing {

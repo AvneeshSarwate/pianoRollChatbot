@@ -232,7 +232,7 @@ onBeforeUnmount(() => {
       <div class="preview-grid">
         <PianoRollItem v-for="roll in previewRolls" :key="roll.id" :id="roll.id" :notes="roll.notes" :width="300"
           :height="170" :interactive="false" :coordinator="coordinator" v-model:include-in-queue="roll.includeInQueue"
-          :is-editing="editingPreviewId === roll.id" @edit="handleEdit(roll.id)" />
+          :is-editing="editingPreviewId === roll.id" @edit="handleEdit(roll.id)"  />
       </div>
     </section>
 
@@ -361,11 +361,11 @@ h2 small {
   gap: 16px;
 }
 
-@media (max-width: 1400px) {
+/* @media (max-width: 750px) {
   .preview-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 334px;
   }
-}
+} */
 
 .tools-section {
   background: #f8fafc;
