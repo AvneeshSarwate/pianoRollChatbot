@@ -22,7 +22,7 @@ const defaultNotes: NoteDataInput[] = [
   { id: 'note-9', pitch: 65, position: 4.5, duration: 0.5, velocity: 98 },
   { id: 'note-10', pitch: 69, position: 5, duration: 1, velocity: 101 },
   { id: 'note-11', pitch: 72, position: 6, duration: 1, velocity: 102 },
-  { id: 'note-12', pitch: 76, position: 6.5, duration: 0.75, velocity: 96 }
+  { id: 'note-12', pitch: 79, position: 6.5, duration: 0.75, velocity: 96 }
 ]
 
 type PianoRollRootInstance = InstanceType<typeof PianoRollRoot> & {
@@ -286,7 +286,7 @@ onBeforeUnmount(() => {
 
         <PianoRollRoot
           ref="pianoRollRef"
-          :width="900"
+          :width="600"
           :height="340"
           :show-control-panel="true"
           :interactive="true"

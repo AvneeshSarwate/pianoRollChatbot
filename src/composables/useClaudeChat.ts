@@ -30,7 +30,9 @@ interface ClaudeChatConfig {
 }
 
 const MAX_NOTES = 512
-const MAX_TOOL_ITERATIONS = 3
+const MAX_TOOL_ITERATIONS = 10
+
+const MODEL_NAME = 'claude-sonnet-4-5'
 
 function validateClampNotes(inputNotes: any[], grid: GridInfo): NoteDataInput[] {
   const notes = inputNotes.slice(0, MAX_NOTES)
@@ -279,7 +281,7 @@ function myTransform(notes, paramName) {
       ]
       
       let response = await client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: MODEL_NAME,
         system: buildSystemPrompt(),
         tools,
         max_tokens: 1000,
@@ -340,7 +342,7 @@ function myTransform(notes, paramName) {
         })
         
         response = await client.messages.create({
-          model: 'claude-3-5-sonnet-20241022',
+          model: MODEL_NAME,
           system: buildSystemPrompt(),
           tools,
           max_tokens: 1000,
