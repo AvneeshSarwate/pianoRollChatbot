@@ -76,8 +76,8 @@ const notifyViewportChange = () => {
   props.syncState?.(state)
 }
 
-const fitZoomToNotes = () => {
-  fitZoomToNotesHelper(state, props.width, props.height, notifyViewportChange)
+const fitZoomToNotes = (startAtTimeZero = false) => {
+  fitZoomToNotesHelper(state, props.width, props.height, notifyViewportChange, startAtTimeZero)
 }
 
 const enforceScrollBounds = () => {

@@ -127,7 +127,8 @@ export const fitZoomToNotes = (
   state: PianoRollState,
   fallbackWidth: number,
   fallbackHeight: number,
-  notifyViewportChange: () => void
+  notifyViewportChange: () => void,
+  startAtTimeZero = false
 ) => {
   const stageWidth = getStageWidth(state, fallbackWidth)
   const stageHeight = getStageHeight(state, fallbackHeight)
@@ -151,13 +152,13 @@ export const fitZoomToNotes = (
 
   const minPos = notes.reduce((min, note) => Math.min(min, note.position), Number.POSITIVE_INFINITY)
   const maxPos = notes.reduce((max, note) => Math.max(max, note.position + note.duration), Number.NEGATIVE_INFINITY)
-  const actualSpanQuarter = Math.max(maxPos - minPos, 0)
+  const actualSpanQuarter = startAtTimeZero ? maxPos : Math.max(maxPos - minPos, 0)
   const targetSpanQuarter = Math.max(actualSpanQuarter, MIN_FIT_HORIZONTAL_BEATS)
   const newQuarterNoteWidth = stageWidth / targetSpanQuarter
 
   const maxStartQuarter = Math.max(0, state.grid.maxLength - targetSpanQuarter)
   const spanPadding = Math.max(targetSpanQuarter - actualSpanQuarter, 0)
-  const startQuarterRaw = minPos - spanPadding / 2
+  const startQuarterRaw = startAtTimeZero ? 0 : minPos - spanPadding / 2
   const startQuarter = clamp(startQuarterRaw, 0, maxStartQuarter)
   applyHorizontalZoom(state, newQuarterNoteWidth, startQuarter, fallbackWidth, fallbackHeight, notifyViewportChange)
 
