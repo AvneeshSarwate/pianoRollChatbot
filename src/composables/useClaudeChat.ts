@@ -23,9 +23,18 @@ interface GridInfo {
 }
 
 interface ClaudeChatConfig {
-  getNotes: () => NoteDataInput[]
-  setNotes: (notes: NoteDataInput[]) => void
-  getGrid: () => GridInfo
+  // Single-roll (existing) - keep for backward compatibility
+  getNotes?: () => NoteDataInput[]
+  setNotes?: (notes: NoteDataInput[]) => void
+  getGrid?: () => GridInfo
+  
+  // Multi-roll (new)
+  listRolls?: () => { id: string; label?: string }[]
+  getNotesByRoll?: (rollId: string) => NoteDataInput[]
+  setNotesByRoll?: (rollId: string, notes: NoteDataInput[]) => void
+  getGridByRoll?: (rollId: string) => GridInfo
+  getSelectedRollId?: () => string
+  
   registry?: TransformRegistry
 }
 
@@ -57,60 +66,78 @@ function validateClampNotes(inputNotes: any[], grid: GridInfo): NoteDataInput[] 
 }
 
 export function createClaudeChat(config: ClaudeChatConfig) {
-  const { getNotes, setNotes, getGrid, registry } = config
+  const { getNotes, setNotes, getGrid, registry, listRolls, getNotesByRoll, setNotesByRoll, getGridByRoll, getSelectedRollId } = config
+  
+  // Detect multi-roll mode
+  const isMulti = !!getNotesByRoll && !!listRolls
   
   const messages = ref<ChatMessage[]>([])
   const isWaiting = ref(false)
   const error = ref<string | null>(null)
   
-  const midiNotesTool: Anthropic.Tool = {
-    name: "midi_notes",
-    description: "Read or write the piano roll MIDI notes. Use action='read' to fetch all notes. Use action='write' with a notes array to replace the current notes.",
-    input_schema: {
-      type: "object",
-      properties: {
-        action: {
-          type: "string",
-          enum: ["read", "write"],
-          description: "Whether to read current notes or write new notes"
-        },
-        notes: {
-          type: "array",
-          description: "Array of MIDI notes to write (only for 'write' action)",
-          items: {
-            type: "object",
-            properties: {
-              id: { type: "string", description: "Optional unique identifier" },
-              pitch: { 
-                type: "number", 
-                minimum: 0, 
-                maximum: 127,
-                description: "MIDI pitch (0-127, 60=middle C)"
-              },
-              position: { 
-                type: "number", 
-                minimum: 0,
-                description: "Note start position in quarter notes"
-              },
-              duration: { 
-                type: "number", 
-                minimum: 0,
-                description: "Note duration in quarter notes"
-              },
-              velocity: { 
-                type: "number", 
-                minimum: 0, 
-                maximum: 127,
-                description: "Note velocity (0-127, default 100)"
-              }
-            },
-            required: ["pitch", "position", "duration"]
-          }
-        }
+  const buildMidiNotesTool = (): Anthropic.Tool => {
+    const properties: any = {
+      action: {
+        type: "string",
+        enum: ["read", "write"],
+        description: "Whether to read current notes or write new notes"
       },
-      required: ["action"]
+      notes: {
+        type: "array",
+        description: "Array of MIDI notes to write (only for 'write' action)",
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "Optional unique identifier" },
+            pitch: { 
+              type: "number", 
+              minimum: 0, 
+              maximum: 127,
+              description: "MIDI pitch (0-127, 60=middle C)"
+            },
+            position: { 
+              type: "number", 
+              minimum: 0,
+              description: "Note start position in quarter notes"
+            },
+            duration: { 
+              type: "number", 
+              minimum: 0,
+              description: "Note duration in quarter notes"
+            },
+            velocity: { 
+              type: "number", 
+              minimum: 0, 
+              maximum: 127,
+              description: "Note velocity (0-127, default 100)"
+            }
+          },
+          required: ["pitch", "position", "duration"]
+        }
+      }
+    }
+    
+    if (isMulti && listRolls) {
+      const rolls = listRolls()
+      const rollList = rolls.map(r => `"${r.id}"${r.label ? ` (${r.label})` : ''}`).join(', ')
+      properties.rollId = {
+        type: "string",
+        description: `Optional roll ID to target. Available rolls: ${rollList}. Defaults to selected roll if omitted.`
+      }
+    }
+    
+    return {
+      name: "midi_notes",
+      description: "Read or write the piano roll MIDI notes. Use action='read' to fetch all notes. Use action='write' with a notes array to replace the current notes.",
+      input_schema: {
+        type: "object",
+        properties,
+        required: ["action"]
+      }
     }
   }
+  
+  const midiNotesTool = buildMidiNotesTool()
   
   const writeTransformTool: Anthropic.Tool = {
     name: "write_transform_function",
@@ -134,7 +161,16 @@ export function createClaudeChat(config: ClaudeChatConfig) {
   }
   
   function buildSystemPrompt(): string {
-    const grid = getGrid()
+    // Get grid info - use first roll if multi-roll, otherwise single roll
+    let grid: GridInfo
+    if (isMulti && listRolls && getGridByRoll) {
+      const rolls = listRolls()
+      grid = rolls.length > 0 ? getGridByRoll(rolls[0]!.id) : { maxLength: 16, timeSignature: 4, subdivision: 16 }
+    } else if (getGrid) {
+      grid = getGrid()
+    } else {
+      grid = { maxLength: 16, timeSignature: 4, subdivision: 16 }
+    }
     
     let prompt = `You are a music composition assistant for a MIDI piano roll editor.
 
@@ -150,6 +186,18 @@ IMPORTANT RULES:
 - Keep responses concise and acknowledge changes after writing
 - Consider musical context when suggesting edits (key, rhythm, harmony)
 - When creating chords, use simultaneous notes at the same position`
+    
+    if (isMulti && listRolls) {
+      const rolls = listRolls()
+      const rollList = rolls.map(r => `"${r.id}"${r.label ? ` (${r.label})` : ''}`).join(', ')
+      prompt += `
+
+MULTI-ROLL MODE:
+- Multiple piano rolls available: ${rollList}
+- Always include the 'rollId' parameter when calling midi_notes to specify which roll to read/write
+- If rollId is omitted, the currently selected roll will be used
+- You can work with different rolls simultaneously by specifying the appropriate rollId`
+    }
 
     if (registry) {
       prompt += `
@@ -202,20 +250,47 @@ function myTransform(notes, paramName) {
   }
   
   async function executeMidiNotesTool(input: any) {
-    const grid = getGrid()
+    let rollId: string | undefined = input.rollId
+    let grid: GridInfo
+    let notes: NoteDataInput[]
+    let setNotesFunc: (notes: NoteDataInput[]) => void
+    
+    if (isMulti && getNotesByRoll && setNotesByRoll && getGridByRoll && listRolls) {
+      // Multi-roll mode
+      if (!rollId && getSelectedRollId) {
+        rollId = getSelectedRollId()
+      }
+      if (!rollId) {
+        const rolls = listRolls()
+        rollId = rolls.length > 0 ? rolls[0]!.id : 'editor'
+      }
+      
+      grid = getGridByRoll(rollId)
+      notes = getNotesByRoll(rollId)
+      setNotesFunc = (n: NoteDataInput[]) => setNotesByRoll!(rollId!, n)
+    } else if (getNotes && setNotes && getGrid) {
+      // Single-roll mode
+      grid = getGrid()
+      notes = getNotes()
+      setNotesFunc = setNotes
+    } else {
+      return { error: 'Invalid configuration' }
+    }
     
     if (input.action === 'read') {
       return {
-        notes: getNotes(),
-        grid
+        notes,
+        grid,
+        rollId
       }
     } else if (input.action === 'write') {
       const normalized = validateClampNotes(input.notes || [], grid)
-      setNotes(normalized)
+      setNotesFunc(normalized)
       return {
         status: 'ok',
         count: normalized.length,
-        grid
+        grid,
+        rollId
       }
     }
     

@@ -5,10 +5,11 @@ import PianoRollRoot from './pianoRoll/PianoRollRoot.vue'
 import ClaudeChat from './ClaudeChat.vue'
 import TransformWorkbench from './TransformWorkbench.vue'
 import { createTransformRegistry } from '../composables/useTransformRegistry'
+import { usePlaybackCoordinator } from './pianoRoll/playback/usePlaybackCoordinator'
 import type { NoteDataInput, PianoRollState } from './pianoRoll/pianoRollState'
 import type { TimelineNote, TimelineState } from '../types/timeline'
 
-const START_DELAY = 0.05
+const ROLL_ID = 'main-demo'
 
 const defaultNotes: NoteDataInput[] = [
   { id: 'note-1', pitch: 60, position: 0, duration: 1, velocity: 110 },
@@ -32,16 +33,6 @@ type PianoRollRootInstance = InstanceType<typeof PianoRollRoot> & {
   fitZoomToNotes(): void
 }
 
-interface ScheduledEvent {
-  note: TimelineNote
-  duration: number
-  velocity: number
-}
-
-interface TimedScheduledEvent extends ScheduledEvent {
-  time: number
-}
-
 const pianoRollRef = ref<PianoRollRootInstance | null>(null)
 
 const timelineState = reactive<TimelineState>({
@@ -55,154 +46,29 @@ const timelineState = reactive<TimelineState>({
   }
 })
 
-const isPlaying = ref(false)
-const statusLabel = computed(() => (isPlaying.value ? 'Playing' : 'Stopped'))
+const coordinator = usePlaybackCoordinator()
+
+const statusLabel = computed(() => (coordinator.isPlaying.value ? 'Playing' : 'Stopped'))
 const hasNotes = computed(() => timelineState.notes.length > 0)
 const queueDisplay = computed(() => timelineState.queuePosition.toFixed(2))
 
-let synth: Tone.PolySynth<Tone.Synth> | null = null
-let part: Tone.Part<TimedScheduledEvent> | null = null
-let rafId: number | null = null
-let stopScheduleId: number | null = null
-let playbackStartPosition = 0
-
-const quarterNoteSeconds = () => 60 / Tone.Transport.bpm.value
-const quartersPerSecond = () => Tone.Transport.bpm.value / 60
-
-const clearAnimation = () => {
-  if (rafId !== null) {
-    cancelAnimationFrame(rafId)
-    rafId = null
-  }
-}
-
-const setLivePlayhead = (position: number) => {
-  timelineState.playheadPosition = position
-  pianoRollRef.value?.setLivePlayheadPosition(position)
-}
+let unregister: (() => void) | null = null
 
 const syncQueuePosition = (position: number) => {
   timelineState.queuePosition = position
-  if (!isPlaying.value) {
-    setLivePlayhead(position)
+  if (!coordinator.isPlaying.value) {
+    pianoRollRef.value?.setLivePlayheadPosition(position)
   }
 }
 
-const clearTransportSchedules = () => {
-  if (stopScheduleId !== null) {
-    Tone.Transport.clear(stopScheduleId)
-    stopScheduleId = null
-  }
-  Tone.Transport.cancel()
-}
-
-const stopPlayback = (resetToQueue = true) => {
-  if (!isPlaying.value && !part) {
-    return
-  }
-
-  Tone.Transport.stop()
-  clearTransportSchedules()
-
-  if (part) {
-    part.stop(0)
-    part.dispose()
-    part = null
-  }
-
-  clearAnimation()
-  isPlaying.value = false
-
-  if (resetToQueue) {
-    const target = pianoRollRef.value?.getPlayStartPosition?.() ?? timelineState.queuePosition ?? 0
-    setLivePlayhead(target)
-  }
-}
-
-const scheduleAnimation = () => {
-  clearAnimation()
-  const update = () => {
-    if (!isPlaying.value) return
-    const elapsedSeconds = Tone.Transport.seconds
-    const currentQuarter = playbackStartPosition + elapsedSeconds * quartersPerSecond()
-    setLivePlayhead(currentQuarter)
-    rafId = requestAnimationFrame(update)
-  }
-  rafId = requestAnimationFrame(update)
-}
-
-const startPlayback = async () => {
+const handlePlayClick = async () => {
   if (!hasNotes.value) return
-
-  synth ??= new Tone.PolySynth(Tone.Synth).toDestination()
-
   await Tone.start()
-
-  if (isPlaying.value) {
-    stopPlayback(false)
-  }
-
-  playbackStartPosition = pianoRollRef.value?.getPlayStartPosition?.() ?? timelineState.queuePosition
-  const activeNotes = timelineState.notes
-    .filter((note) => note.position + note.duration > playbackStartPosition)
-    .map((note) => ({
-      note,
-      offset: Math.max(0, note.position - playbackStartPosition)
-    }))
-
-  if (!activeNotes.length) {
-    setLivePlayhead(playbackStartPosition)
-    return
-  }
-
-  const quarterSeconds = quarterNoteSeconds()
-  const scheduledEvents = activeNotes.map<TimedScheduledEvent>((entry) => {
-    const velocity = Math.max(0, Math.min(1, (entry.note.velocity ?? 100) / 127))
-    return {
-      note: entry.note,
-      time: entry.offset * quarterSeconds,
-      velocity,
-      duration: Math.max(entry.note.duration, 0.0625) * quarterSeconds
-    }
-  })
-
-  if (part) {
-    part.stop(0)
-    part.dispose()
-    part = null
-  }
-
-  clearTransportSchedules()
-
-  part = new Tone.Part<TimedScheduledEvent>((time, event) => {
-    const noteName = Tone.Frequency(event.note.pitch, 'midi').toNote()
-    synth?.triggerAttackRelease(noteName, event.duration, time, event.velocity)
-  }, scheduledEvents)
-
-  part.start(0)
-
-  Tone.Transport.stop()
-  Tone.Transport.position = 0
-  Tone.Transport.start(`+${START_DELAY.toFixed(3)}`)
-
-  isPlaying.value = true
-  setLivePlayhead(playbackStartPosition)
-
-  const playbackDuration = scheduledEvents.reduce((end, event) => Math.max(end, event.time + event.duration), 0)
-
-  stopScheduleId = Tone.Transport.scheduleOnce(() => {
-    stopPlayback()
-  }, playbackDuration + 0.1)
-
-  scheduleAnimation()
-}
-
-const handlePlayClick = () => {
-  startPlayback().catch((error) => console.error(error))
+  coordinator.playRoll(ROLL_ID)
 }
 
 const handleStopClick = () => {
-  stopPlayback()
+  coordinator.stop()
 }
 
 const handleStateSync = (state: PianoRollState) => {
@@ -224,7 +90,7 @@ const handleStateSync = (state: PianoRollState) => {
 
   syncQueuePosition(state.queuePlayhead.position)
 
-  stopPlayback()
+  coordinator.stop()
 }
 
 const getNotes = (): NoteDataInput[] => {
@@ -260,6 +126,15 @@ onMounted(() => {
 
   nextTick(() => {
     if (!pianoRollRef.value) return
+
+    unregister = coordinator.registerRoll({
+      id: ROLL_ID,
+      getNotes,
+      getQueueStart: () => pianoRollRef.value?.getPlayStartPosition() ?? 0,
+      setLivePlayhead: (position: number) => pianoRollRef.value?.setLivePlayheadPosition(position),
+      getGrid
+    })
+
     pianoRollRef.value.setNotes(defaultNotes)
     pianoRollRef.value.fitZoomToNotes()
     syncQueuePosition(pianoRollRef.value.getPlayStartPosition?.() ?? 0)
@@ -267,10 +142,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  stopPlayback(false)
-  clearTransportSchedules()
-  synth?.dispose()
-  synth = null
+  unregister?.()
+  coordinator.dispose()
 })
 </script>
 
@@ -279,21 +152,15 @@ onBeforeUnmount(() => {
     <div class="piano-roll-row">
       <section class="piano-roll-card">
         <div class="controls">
-          <button @click="handlePlayClick" :disabled="isPlaying || !hasNotes">Play</button>
-          <button @click="handleStopClick" :disabled="!isPlaying">Stop</button>
-          <span class="status" :class="{ playing: isPlaying }">{{ statusLabel }}</span>
+          <button @click="handlePlayClick" :disabled="coordinator.isPlaying.value || !hasNotes">Play</button>
+          <button @click="handleStopClick" :disabled="!coordinator.isPlaying.value">Stop</button>
+          <span class="status" :class="{ playing: coordinator.isPlaying.value }">{{ statusLabel }}</span>
         </div>
         <p class="note">Use the green queue playhead inside the roll to choose a start point, then press play.</p>
         <p class="meta">Queue start (quarter notes): <span>{{ queueDisplay }}</span></p>
 
-        <PianoRollRoot
-          ref="pianoRollRef"
-          :width="600"
-          :height="340"
-          :show-control-panel="true"
-          :interactive="true"
-          :sync-state="handleStateSync"
-        />
+        <PianoRollRoot ref="pianoRollRef" :width="600" :height="340" :show-control-panel="true" :interactive="true"
+          :sync-state="handleStateSync" />
       </section>
     </div>
 
@@ -303,12 +170,8 @@ onBeforeUnmount(() => {
       </section>
 
       <section class="chatbot-card">
-        <ClaudeChat 
-          :get-notes="getNotes" 
-          :set-notes="setNotesViaRef" 
-          :get-grid="getGrid"
-          :registry="transformRegistry"
-        />
+        <ClaudeChat :get-notes="getNotes" :set-notes="setNotesViaRef" :get-grid="getGrid"
+          :registry="transformRegistry" />
       </section>
     </div>
   </div>

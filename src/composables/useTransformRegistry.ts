@@ -39,6 +39,9 @@ interface TransformRegistryConfig {
   getNotes: () => NoteDataInput[]
   setNotes: (notes: NoteDataInput[]) => void
   getGrid: () => GridInfo
+  // New optional hooks for multi-roll support
+  getTargetRollId?: () => string
+  setTargetRollId?: (id: string) => void
 }
 
 const MAX_NOTES = 512
@@ -238,7 +241,7 @@ function validateTransform(code: string): ValidationResult {
 }
 
 export function createTransformRegistry(config: TransformRegistryConfig) {
-  const { getNotes, setNotes, getGrid } = config
+  const { getNotes, setNotes, getGrid, getTargetRollId, setTargetRollId } = config
   
   const slots = reactive<TransformSlot[]>(
     Array.from({ length: 8 }, (_, i) => ({
@@ -357,6 +360,12 @@ export function createTransformRegistry(config: TransformRegistryConfig) {
         required.push(param.name)
       }
       
+      // Add optional rollId parameter for multi-roll support
+      properties.rollId = {
+        type: 'string',
+        description: 'Optional roll ID to target. If omitted, uses the currently selected roll.'
+      }
+      
       tools.push({
         name: `transform_slot_${i + 1}`,
         description: slot.jsdocSummary || `User-defined transform in ${slot.name}`,
@@ -380,18 +389,33 @@ export function createTransformRegistry(config: TransformRegistryConfig) {
       
       const toolName = `transform_slot_${i + 1}`
       handlers.set(toolName, async (input: any) => {
-        const args = slot.params
-          .filter(p => p.name !== 'notes')
-          .map(p => input[p.name] || 0)
+        // Handle roll targeting if rollId is provided
+        let previousRollId: string | undefined
+        if (input.rollId && setTargetRollId && getTargetRollId) {
+          previousRollId = getTargetRollId()
+          setTargetRollId(input.rollId)
+        }
         
-        const result = applyTransform(i, args)
-        const grid = getGrid()
-        
-        return {
-          status: result.status,
-          count: result.count,
-          error: result.error,
-          grid
+        try {
+          const args = slot.params
+            .filter(p => p.name !== 'notes')
+            .map(p => input[p.name] || 0)
+          
+          const result = applyTransform(i, args)
+          const grid = getGrid()
+          
+          return {
+            status: result.status,
+            count: result.count,
+            error: result.error,
+            grid,
+            rollId: input.rollId
+          }
+        } finally {
+          // Restore previous target if we changed it
+          if (previousRollId !== undefined && setTargetRollId) {
+            setTargetRollId(previousRollId)
+          }
         }
       })
     }

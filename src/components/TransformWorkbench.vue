@@ -5,11 +5,21 @@ import { javascript } from '@codemirror/lang-javascript'
 import { oneDark } from '@codemirror/theme-one-dark'
 import type { TransformRegistry } from '../composables/useTransformRegistry'
 
+interface RollOption {
+  id: string
+  label: string
+}
+
 interface Props {
   registry: TransformRegistry
+  rollOptions?: RollOption[]
+  targetRollId?: string
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<{
+  'update:targetRollId': [id: string]
+}>()
 
 const activeTab = ref(0)
 const paramInputs = ref<Record<number, Record<string, number>>>({})
@@ -79,6 +89,17 @@ const setParamInput = (paramName: string, value: number) => {
     <div class="workbench-header">
       <h3>Transform Functions</h3>
       <div class="header-actions">
+        <select
+          v-if="rollOptions && rollOptions.length > 1"
+          :value="targetRollId"
+          @change="emit('update:targetRollId', ($event.target as HTMLSelectElement).value)"
+          class="roll-selector"
+          title="Select target roll"
+        >
+          <option v-for="roll in rollOptions" :key="roll.id" :value="roll.id">
+            {{ roll.label }}
+          </option>
+        </select>
         <span class="template-hint">Click this to see the transform function format →</span>
         <button 
           @click="handleInsertTemplate" 
@@ -213,6 +234,27 @@ const setParamInput = (paramName: string, value: number) => {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.roll-selector {
+  padding: 4px 8px;
+  border: 1px solid #d5d9e6;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #303553;
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.roll-selector:hover {
+  border-color: #999;
+}
+
+.roll-selector:focus {
+  outline: none;
+  border-color: #4a6cf7;
+  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
 }
 
 .template-hint {

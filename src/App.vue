@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import PianoRollDemo from './components/PianoRollDemo.vue'
+import MultiPianoRollDemo from './components/pianoRoll/MultiPianoRollDemo.vue'
 </script>
 
 <template>
@@ -18,7 +18,7 @@ import PianoRollDemo from './components/PianoRollDemo.vue'
       </p>
     </div>
     
-    <PianoRollDemo />
+    <MultiPianoRollDemo />
   </main>
 </template>
 

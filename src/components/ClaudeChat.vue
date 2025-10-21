@@ -5,9 +5,18 @@ import type { NoteDataInput } from './pianoRoll/pianoRollState'
 import type { TransformRegistry } from '../composables/useTransformRegistry'
 
 interface Props {
-  getNotes: () => NoteDataInput[]
-  setNotes: (notes: NoteDataInput[]) => void
-  getGrid: () => { maxLength: number; timeSignature: number; subdivision: number }
+  // Existing single-roll (backward compatible)
+  getNotes?: () => NoteDataInput[]
+  setNotes?: (notes: NoteDataInput[]) => void
+  getGrid?: () => { maxLength: number; timeSignature: number; subdivision: number }
+  
+  // New multi-roll
+  listRolls?: () => { id: string; label?: string }[]
+  getNotesByRoll?: (rollId: string) => NoteDataInput[]
+  setNotesByRoll?: (rollId: string, notes: NoteDataInput[]) => void
+  getGridByRoll?: (rollId: string) => { maxLength: number; timeSignature: number; subdivision: number }
+  getSelectedRollId?: () => string
+  
   registry?: TransformRegistry
 }
 
@@ -17,6 +26,11 @@ const chat = createClaudeChat({
   getNotes: props.getNotes,
   setNotes: props.setNotes,
   getGrid: props.getGrid,
+  listRolls: props.listRolls,
+  getNotesByRoll: props.getNotesByRoll,
+  setNotesByRoll: props.setNotesByRoll,
+  getGridByRoll: props.getGridByRoll,
+  getSelectedRollId: props.getSelectedRollId,
   registry: props.registry
 })
 
