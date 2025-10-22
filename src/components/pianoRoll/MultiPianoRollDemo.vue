@@ -359,6 +359,7 @@ h2 small {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+  justify-items: center;
 }
 
 /* @media (max-width: 750px) {

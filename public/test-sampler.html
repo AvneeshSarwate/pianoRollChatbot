@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Sampler</title>
+  <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
+</head>
+<body>
+  <h1>Testing Sampler Loading</h1>
+  <button id="playBtn">Play Test Note</button>
+  <div id="status">Status: Not loaded</div>
+
+  <script>
+    console.log('Base URL:', window.location.origin + window.location.pathname.replace('test-sampler.html', ''))
+    
+    const sampler = new Tone.Sampler({
+      urls: {
+        'A0': 'A0v10.wav',
+        'C1': 'C1v10.wav',
+        'D#1': 'D%231v10.wav'
+      },
+      baseUrl: './salamanderSamples/',
+      onload: () => {
+        console.log('✅ Samples loaded successfully!')
+        document.getElementById('status').textContent = 'Status: Loaded!'
+        document.getElementById('playBtn').disabled = false
+      },
+      onerror: (error) => {
+        console.error('❌ Error loading:', error)
+        document.getElementById('status').textContent = 'Status: Error - ' + error
+      }
+    }).toDestination()
+
+    console.log('Sampler created, loaded property:', sampler.loaded)
+
+    document.getElementById('playBtn').disabled = true
+    document.getElementById('playBtn').addEventListener('click', async () => {
+      await Tone.start()
+      sampler.triggerAttackRelease('C4', '8n')
+    })
+  </script>
+</body>
+</html>

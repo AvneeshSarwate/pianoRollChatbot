@@ -36,7 +36,7 @@ type PianoRollRootInstance = InstanceType<typeof PianoRollRoot> & {
 }
 
 const pianoRollRef = ref<PianoRollRootInstance | null>(null)
-const instrumentKind = ref<'poly' | 'fm' | 'am' | 'mono'>('poly')
+const instrumentKind = ref<'piano' | 'poly' | 'fm' | 'am'>('piano')
 const loopEnabled = ref(false)
 const loopCount = ref(1)
 const internalQueueState = ref(props.includeInQueue)
@@ -120,10 +120,10 @@ onUnmounted(() => {
       </label>
 
       <select v-model="instrumentKind" @change="handleInstrumentChange" class="instrument-select">
+        <option value="piano">Piano</option>
         <option value="poly">Poly</option>
         <option value="fm">FM</option>
         <option value="am">AM</option>
-        <option value="mono">Mono</option>
       </select>
 
       <label class="loop-toggle">

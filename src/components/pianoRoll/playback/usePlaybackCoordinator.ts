@@ -1,8 +1,9 @@
 import { ref, computed } from 'vue'
 import * as Tone from 'tone'
 import type { NoteDataInput } from '../pianoRollState'
+import { createPianoSampler } from './pianoSampler'
 
-const START_DELAY = 0.05
+const START_DELAY = 0.15
 
 interface RollRegistration {
   id: string
@@ -17,7 +18,7 @@ interface LoopConfig {
   count?: number
 }
 
-type InstrumentKind = 'poly' | 'fm' | 'am' | 'mono'
+type InstrumentKind = 'piano' | 'poly' | 'fm' | 'am'
 
 interface QueueItem {
   rollId: string
@@ -25,12 +26,36 @@ interface QueueItem {
   total: number
 }
 
-type ToneInstrument = Tone.PolySynth<Tone.Synth> | Tone.FMSynth | Tone.AMSynth | Tone.MonoSynth
+type ToneInstrument = {
+  triggerAttackRelease(note: string, duration: number, time?: number, velocity?: number): void
+  dispose(): void
+}
 
 export function usePlaybackCoordinator() {
   const rolls = new Map<string, RollRegistration>()
   const instruments = new Map<string, ToneInstrument>()
   const loopConfigs = new Map<string, LoopConfig>()
+
+  const awaitInstrumentLoaded = async (instrument: ToneInstrument) => {
+    // Tone.Sampler exposes `loaded` promise
+    if ((instrument as any) instanceof Tone.Sampler) {
+      const sampler = instrument as unknown as Tone.Sampler
+      console.log('Checking sampler loaded state:', (sampler as any).loaded)
+      
+      // Check if already loaded
+      if ((sampler as any).loaded === true) {
+        console.log('Sampler already loaded')
+        return
+      }
+      
+      // Wait for it to load
+      if (sampler.loaded) {
+        console.log('Waiting for sampler to load...')
+        await sampler.loaded
+        console.log('Sampler load complete!')
+      }
+    }
+  }
 
   const isPlaying = ref(false)
   const currentRollId = ref<string | null>(null)
@@ -77,22 +102,22 @@ export function usePlaybackCoordinator() {
 
   const createInstrument = (kind: InstrumentKind): ToneInstrument => {
     switch (kind) {
+      case 'piano':
+        return createPianoSampler()
       case 'poly':
         return new Tone.PolySynth(Tone.Synth).toDestination()
       case 'fm':
-        return new Tone.FMSynth().toDestination()
+        return new Tone.PolySynth(Tone.FMSynth).toDestination()
       case 'am':
-        return new Tone.AMSynth().toDestination()
-      case 'mono':
-        return new Tone.MonoSynth().toDestination()
+        return new Tone.PolySynth(Tone.AMSynth).toDestination()
       default:
-        return new Tone.PolySynth(Tone.Synth).toDestination()
+        return createPianoSampler()
     }
   }
 
   const registerRoll = (roll: RollRegistration) => {
     rolls.set(roll.id, roll)
-    instruments.set(roll.id, createInstrument('poly'))
+    instruments.set(roll.id, createInstrument('piano'))
     loopConfigs.set(roll.id, { enabled: false, count: 1 })
 
     return () => {
@@ -111,7 +136,7 @@ export function usePlaybackCoordinator() {
     loopConfigs.set(id, config)
   }
 
-  const scheduleAnimation = (rollId: string) => {
+  const scheduleAnimation = (rollId: string, loopLength?: number) => {
     const roll = rolls.get(rollId)
     if (!roll) return
 
@@ -122,7 +147,14 @@ export function usePlaybackCoordinator() {
       if (isQueueMode && !currentQueueIds.includes(rollId)) return
       
       const elapsedSeconds = Tone.Transport.seconds
-      const currentQuarter = startPosition + elapsedSeconds * quartersPerSecond()
+      let currentQuarter = startPosition + elapsedSeconds * quartersPerSecond()
+      
+      // Wrap playhead position if looping
+      if (loopLength && loopLength > 0) {
+        const relativePosition = currentQuarter - startPosition
+        currentQuarter = startPosition + (relativePosition % loopLength)
+      }
+      
       roll.setLivePlayhead(currentQuarter)
       const id = requestAnimationFrame(update)
       rafIds.set(rollId, id)
@@ -139,6 +171,7 @@ export function usePlaybackCoordinator() {
     if (!roll || !instrument) return
 
     await Tone.start()
+    await awaitInstrumentLoaded(instrument)
 
     const playbackStartPosition = roll.getQueueStart()
     playbackStartPositions.set(rollId, playbackStartPosition)
@@ -209,11 +242,22 @@ export function usePlaybackCoordinator() {
     roll.setLivePlayhead(playbackStartPosition)
 
     const playbackDuration = scheduledEvents.reduce((end, event) => Math.max(end, event.time + event.duration), 0)
+    const loopLenSec = loopLength * quarterSeconds
     const totalDuration = effectiveLoopCount === Infinity
       ? Number.MAX_SAFE_INTEGER
-      : playbackDuration * effectiveLoopCount
+      : (part.loop ? loopLenSec * effectiveLoopCount : playbackDuration)
+    
+    // Calculate when content actually ends (for looped: last content + (N-1) loops)
+    const contentEnd = part.loop ? playbackDuration + (effectiveLoopCount - 1) * loopLenSec : playbackDuration
+    
+    // Stop after content ends but before next loop boundary to prevent N+1 loops
+    const stopAt = effectiveLoopCount === Infinity
+      ? null
+      : (part.loop
+          ? Math.min(contentEnd + 0.02, totalDuration - 0.001)
+          : totalDuration + 0.1)
 
-    scheduleAnimation(rollId)
+    scheduleAnimation(rollId, part.loop ? loopLength : undefined)
 
     return new Promise((resolve) => {
       if (effectiveLoopCount === Infinity) {
@@ -226,7 +270,7 @@ export function usePlaybackCoordinator() {
           stopInternal(true)
         }
         resolve()
-      }, totalDuration + 0.1)
+      }, stopAt!)
     })
   }
 
@@ -293,8 +337,14 @@ export function usePlaybackCoordinator() {
 
     await Tone.start()
 
+    // Wait for all instruments to load
+    for (const rollId of currentQueueIds) {
+      const instrument = instruments.get(rollId)
+      if (instrument) await awaitInstrumentLoaded(instrument)
+    }
+
     const quarterSeconds = quarterNoteSeconds()
-    let maxTotalDuration = 0
+    let maxStopAt = 0
 
     for (const rollId of currentQueueIds) {
       const roll = rolls.get(rollId)
@@ -353,10 +403,20 @@ export function usePlaybackCoordinator() {
       roll.setLivePlayhead(playbackStartPosition)
 
       const playbackDuration = scheduledEvents.reduce((end, event) => Math.max(end, event.time + event.duration), 0)
-      const totalDuration = playbackDuration * effectiveLoopCount
-      maxTotalDuration = Math.max(maxTotalDuration, totalDuration)
+      const loopLenSec = loopLength * quarterSeconds
+      const totalDuration = part.loop ? loopLenSec * effectiveLoopCount : playbackDuration
+      
+      // Calculate when content actually ends
+      const contentEnd = part.loop ? playbackDuration + (effectiveLoopCount - 1) * loopLenSec : playbackDuration
+      
+      // Stop after content ends but before next loop boundary
+      const stopAt = part.loop
+        ? Math.min(contentEnd + 0.02, totalDuration - 0.001)
+        : totalDuration + 0.1
+      
+      maxStopAt = Math.max(maxStopAt, stopAt)
 
-      scheduleAnimation(rollId)
+      scheduleAnimation(rollId, part.loop ? loopLength : undefined)
     }
 
     Tone.Transport.stop()
@@ -372,7 +432,7 @@ export function usePlaybackCoordinator() {
 
     stopScheduleId = Tone.Transport.scheduleOnce(() => {
       stopInternal(true)
-    }, maxTotalDuration + 0.1)
+    }, maxStopAt)
   }
 
   const stop = () => {
