@@ -24,30 +24,18 @@ import PianoRollDemo from './components/PianoRollDemo.vue'
 
 <style scoped>
 .description {
-  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-  border: 2px solid #4a6cf7;
-  border-radius: 12px;
-  padding: 24px 32px;
-  margin: 24px 0;
-  box-shadow: 0 8px 24px rgba(74, 108, 247, 0.15);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  margin: var(--space-5) 0;
+  box-shadow: var(--shadow-1);
 }
 
 .description p {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--fs-body-2);
   line-height: 1.8;
-  color: #303553;
-}
-
-.description a {
-  color: #4a6cf7;
-  font-weight: 600;
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  transition: border-color 0.2s ease;
-}
-
-.description a:hover {
-  border-bottom-color: #4a6cf7;
+  color: var(--text);
 }
 </style>

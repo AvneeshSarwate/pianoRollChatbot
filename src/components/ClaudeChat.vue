@@ -66,7 +66,7 @@ const formatTime = (timestamp: number) => {
       <button 
         v-if="chat.messages.value.length > 0" 
         @click="chat.reset()" 
-        class="reset-btn"
+        class="btn btn-ghost reset-btn"
         :disabled="chat.isWaiting.value"
       >
         Clear Chat
@@ -82,7 +82,7 @@ const formatTime = (timestamp: number) => {
         <button 
           type="button"
           @click="showApiKey = !showApiKey" 
-          class="toggle-visibility-btn"
+          class="btn btn-ghost toggle-visibility-btn"
         >
           {{ showApiKey ? '👁️ Hide' : '👁️‍🗨️ Show' }}
         </button>
@@ -92,17 +92,17 @@ const formatTime = (timestamp: number) => {
         v-model="apiKey"
         :type="showApiKey ? 'text' : 'password'"
         placeholder="sk-ant-..."
-        class="api-key-input"
+        class="input api-key-input"
         autocomplete="off"
         spellcheck="false"
       />
-      <div v-if="showApiKeyWarning" class="warning">
+      <div v-if="showApiKeyWarning" class="alert alert-warning warning">
         <span class="warning-icon">⚠️</span>
         <div class="warning-content">
           <strong>Security Warning:</strong> This API key is exposed in your browser. 
           Use a limited, revocable key. Never use production keys.
           <a href="#" @click.prevent="showSecurityModal = true" class="learn-more-link">Click here to learn more</a>
-          <button @click="showApiKeyWarning = false" class="dismiss-btn">Dismiss</button>
+          <button @click="showApiKeyWarning = false" class="btn btn-ghost dismiss-btn">Dismiss</button>
         </div>
       </div>
     </div>
@@ -112,7 +112,7 @@ const formatTime = (timestamp: number) => {
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h2>⚠️ Important notice about your API key</h2>
-          <button @click="showSecurityModal = false" class="modal-close">×</button>
+          <button @click="showSecurityModal = false" class="btn btn-ghost modal-close">×</button>
         </div>
         <div class="modal-body">
           <section>
@@ -178,7 +178,7 @@ const formatTime = (timestamp: number) => {
           </section>
         </div>
         <div class="modal-footer">
-          <button @click="showSecurityModal = false" class="modal-ok-btn">I Understand</button>
+          <button @click="showSecurityModal = false" class="btn btn-primary modal-ok-btn">I Understand</button>
         </div>
       </div>
     </div>
@@ -239,13 +239,13 @@ const formatTime = (timestamp: number) => {
         v-model="userInput"
         @keydown="handleKeyDown"
         placeholder="Ask me to create or modify music..."
-        class="user-input"
+        class="textarea user-input"
         rows="2"
         :disabled="chat.isWaiting.value || !apiKey"
       ></textarea>
       <button
         @click="handleSend"
-        class="send-btn"
+        class="btn btn-primary send-btn"
         :disabled="chat.isWaiting.value || !userInput.trim() || !apiKey"
       >
         Send

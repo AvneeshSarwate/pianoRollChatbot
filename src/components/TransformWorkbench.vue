@@ -82,7 +82,7 @@ const setParamInput = (paramName: string, value: number) => {
         <span class="template-hint">Click this to see the transform function format →</span>
         <button 
           @click="handleInsertTemplate" 
-          class="template-btn"
+          class="btn btn-ghost template-btn"
           title="Insert starter template"
         >
           📝 Template
@@ -106,10 +106,10 @@ const setParamInput = (paramName: string, value: number) => {
       <div class="editor-section">
         <div class="editor-header">
           <div class="status">
-            <span :class="['status-badge', activeSlot.isValid ? 'valid' : 'invalid']">
+            <span :class="['badge', activeSlot.isValid ? 'badge-valid' : 'badge-warning', 'status-badge']">
               {{ activeSlot.isValid ? '✓ Valid' : '⚠ Not Validated' }}
             </span>
-            <button @click="handleValidate" class="validate-btn">
+            <button @click="handleValidate" class="btn btn-primary validate-btn">
               Validate
             </button>
           </div>
@@ -166,18 +166,19 @@ const setParamInput = (paramName: string, value: number) => {
               :value="getParamInput(param.name)"
               @input="setParamInput(param.name, parseFloat(($event.target as HTMLInputElement).value))"
               step="0.1"
+              class="input"
             />
           </div>
         </div>
 
         <div class="execute-actions">
-          <button @click="handleApplyTransform" class="apply-btn">
+          <button @click="handleApplyTransform" class="btn btn-primary apply-btn">
             Apply Transform
           </button>
-          <button @click="registry.undo()" :disabled="!registry.canUndo()" class="undo-btn">
+          <button @click="registry.undo()" :disabled="!registry.canUndo()" class="btn btn-ghost undo-btn">
             ↶ Undo
           </button>
-          <button @click="registry.redo()" :disabled="!registry.canRedo()" class="redo-btn">
+          <button @click="registry.redo()" :disabled="!registry.canRedo()" class="btn btn-ghost redo-btn">
             ↷ Redo
           </button>
         </div>

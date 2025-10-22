@@ -339,8 +339,8 @@ watch(selectedMidiDevice, (deviceId) => {
     <div class="piano-roll-row">
       <section class="piano-roll-card">
         <div class="controls">
-          <button @click="handlePlayClick" :disabled="isPlaying || !hasNotes">Play</button>
-          <button @click="handleStopClick" :disabled="!isPlaying">Stop</button>
+          <button class="btn btn-primary" @click="handlePlayClick" :disabled="isPlaying || !hasNotes">Play</button>
+          <button class="btn btn-danger" @click="handleStopClick" :disabled="!isPlaying">Stop</button>
           <span class="status" :class="{ playing: isPlaying }">{{ statusLabel }}</span>
           <span class="separator">|</span>
           <label class="midi-control">
@@ -434,34 +434,30 @@ section {
   align-items: center;
 }
 
-.controls button {
-  background: linear-gradient(135deg, #4a6cf7, #667aff);
-  border: none;
-  border-radius: 8px;
-  color: #ffffff;
-  padding: 8px 18px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
-  box-shadow: 0 8px 18px rgba(74, 108, 247, 0.2);
+.midi-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
-.controls button:nth-of-type(2) {
-  background: linear-gradient(135deg, #ff5b6c, #ff7a85);
-  box-shadow: 0 8px 18px rgba(255, 91, 108, 0.2);
+.midi-control input[type="checkbox"] {
+  -webkit-appearance: checkbox;
+  appearance: auto;
+  width: 16px;
+  height: 16px;
+  margin: 0 6px 0 0;
 }
 
-.controls button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  box-shadow: none;
+.midi-control select {
+  -webkit-appearance: menulist;
+  appearance: auto;
+  width: auto;
+  min-width: 160px;
+  padding: 6px 10px;
 }
 
-.controls button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(74, 108, 247, 0.28);
-}
+
 
 .status {
   font-weight: 600;

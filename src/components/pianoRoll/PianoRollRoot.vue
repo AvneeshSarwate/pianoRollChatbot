@@ -286,8 +286,8 @@ defineExpose({
 <template>
   <div class="piano-roll-root">
     <div v-if="showControlPanel" class="control-panel">
-      <button @click="undo" :disabled="!isInteractive || !canUndo">↶ Undo</button>
-      <button @click="redo" :disabled="!isInteractive || !canRedo">↷ Redo</button>
+      <button class="btn btn-ghost" @click="undo" :disabled="!isInteractive || !canUndo">↶ Undo</button>
+      <button class="btn btn-ghost" @click="redo" :disabled="!isInteractive || !canRedo">↷ Redo</button>
       <span class="separator">|</span>
       <label>
         Grid:
@@ -299,7 +299,7 @@ defineExpose({
         </select>
       </label>
       <span class="separator">|</span>
-      <button @click="deleteSelected" :disabled="!isInteractive || selectionCount === 0">
+      <button class="btn btn-ghost" @click="deleteSelected" :disabled="!isInteractive || selectionCount === 0">
         🗑️ Delete
       </button>
       <span class="separator">|</span>
@@ -363,61 +363,44 @@ defineExpose({
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  padding: 20px;
+  gap: var(--space-4);
+  padding: var(--space-4);
 }
 
 .control-panel {
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 10px 15px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  gap: var(--space-3);
+  box-shadow: var(--shadow-1);
 }
 
-.control-panel button {
-  background: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 5px 15px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-}
 
-.control-panel button:hover:not(:disabled) {
-  background: #e0e0e0;
-}
-
-.control-panel button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .separator {
-  color: #ccc;
+  color: var(--border);
 }
 
 .info {
-  color: #666;
-  font-size: 14px;
+  color: var(--text-muted);
+  font-size: var(--fs-body-3);
 }
 
 .piano-roll-container {
-  background-color: white;
-  border: 1px solid black;
+  background: var(--surface);
+  border: 1px solid var(--border);
   cursor: default;
   box-sizing: border-box;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   outline: none;
 }
 
 .piano-roll-container:focus-visible {
-  border-color: #4a6cf7;
-  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(138, 107, 69, 0.2);
 }
 
 .piano-roll-container.is-disabled {
@@ -428,20 +411,20 @@ defineExpose({
 .piano-roll-layout {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .stage-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
   align-items: stretch;
 }
 
 .scrollbar {
   position: relative;
-  background: #f5f5f5;
-  border: 1px solid #ccc;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   border-radius: 10px;
   box-sizing: border-box;
   user-select: none;
@@ -457,13 +440,13 @@ defineExpose({
 }
 
 .scrollbar.is-disabled {
-  opacity: 0.45;
+  opacity: .4;
   pointer-events: none;
 }
 
 .scrollbar-thumb {
   position: absolute;
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(20, 20, 19, 0.18);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -490,7 +473,7 @@ defineExpose({
 }
 
 .scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(20, 20, 19, 0.25);
 }
 
 .scrollbar-body {
@@ -504,8 +487,8 @@ defineExpose({
 }
 
 .scrollbar-handle {
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: 4px;
+  background: rgba(20, 20, 19, 0.35);
+  border-radius: var(--radius-xs);
   flex: 0 0 auto;
 }
 
@@ -526,15 +509,28 @@ defineExpose({
 label {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 14px;
+  gap: var(--space-2);
+  font-size: var(--fs-body-3);
 }
 
 select {
-  padding: 3px 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-body-3);
   cursor: pointer;
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color 120ms;
+}
+
+select:hover {
+  border-color: var(--border-strong);
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--accent-hover);
+  box-shadow: 0 0 0 2px rgba(138, 107, 69, 0.2);
 }
 </style>
