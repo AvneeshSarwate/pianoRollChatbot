@@ -17,6 +17,33 @@ import {
 } from './pianoRollUtils'
 import { CommandStack } from './commandStack'
 
+function lerpColor(baseColor: string, targetColor: string, t: number): string {
+  const parseHex = (color: string) => {
+    const hex = color.startsWith('#') ? color.slice(1) : color
+    const fullHex = hex.length === 3 
+      ? hex.split('').map(c => c + c).join('') 
+      : hex
+    return parseInt(fullHex, 16)
+  }
+  
+  const base = parseHex(baseColor)
+  const target = parseHex(targetColor)
+  
+  const r1 = (base >> 16) & 0xff
+  const g1 = (base >> 8) & 0xff
+  const b1 = base & 0xff
+  
+  const r2 = (target >> 16) & 0xff
+  const g2 = (target >> 8) & 0xff
+  const b2 = target & 0xff
+  
+  const r = Math.round(r1 + (r2 - r1) * t)
+  const g = Math.round(g1 + (g2 - g1) * t)
+  const b = Math.round(b1 + (b2 - b1) * t)
+  
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
+}
+
 // ================= State Serialization =================
 
 export function captureState(state: PianoRollState): string {
@@ -242,12 +269,15 @@ export function renderVisibleNotes(state: PianoRollState) {
     const width = displayDuration * quarterNoteWidth
     const isHidden = state.interaction.hiddenNoteIds.has(id)
 
+    const velocityNormalized = Math.min(1, Math.max(0, note.velocity / 127))
+    const noteColor = lerpColor(state.grid.noteColor, '#444444', 1 - velocityNormalized)
+    
     const rect = new Konva.Rect({
       x: screen.x,
       y: screen.y,
       width,
       height: noteHeight,
-      fill: state.grid.noteColor,
+      fill: noteColor,
       stroke: '#000',
       strokeWidth: 1,
       opacity: isHidden ? 0.3 : 1.0,
