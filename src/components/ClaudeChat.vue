@@ -212,7 +212,9 @@ const formatTime = (timestamp: number) => {
           <div v-for="(toolCall, idx) in message.toolCalls" :key="idx" class="tool-call">
             <span class="tool-name">{{ toolCall.displayName || toolCall.name }}</span>
             <span v-if="Object.keys(toolCall.input).length > 0" class="tool-params">
-              ({{ Object.entries(toolCall.input).map(([k, v]) => `${k}: ${v}`).join(', ') }})
+              ({{ Object.entries(toolCall.input)
+                .filter(([k]) => !(toolCall.name === 'midi_notes' && k === 'notes'))
+                .map(([k, v]) => `${k}: ${v}`).join(', ') }})
             </span>
           </div>
         </div>
