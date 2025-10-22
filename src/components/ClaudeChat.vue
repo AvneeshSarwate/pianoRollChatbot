@@ -532,13 +532,13 @@ const formatTime = (timestamp: number) => {
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
-  /* background: var(--c-surface-subtle); */
-  border: 1px solid var(--c-border);
-  border-radius: 12px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
   min-height: 200px;
   max-height: 350px;
 }
@@ -546,7 +546,7 @@ const formatTime = (timestamp: number) => {
 .empty-state {
   text-align: center;
   color: var(--c-text-muted);
-  padding: 20px;
+  padding: 16px;
 }
 
 .empty-state p {
@@ -556,10 +556,10 @@ const formatTime = (timestamp: number) => {
 
 .examples {
   text-align: left;
-  background: var(--c-surface);
-  padding: 16px;
-  border-radius: 10px;
-  border: 1px solid var(--c-border);
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: 0;
 }
 
 .examples p {
@@ -580,35 +580,33 @@ const formatTime = (timestamp: number) => {
 }
 
 .message {
-  padding: 10px 12px;
-  border-radius: 8px;
-  max-width: 90%;
-  animation: slideIn 0.2s ease;
+  width: 100%;
+  max-width: none;
+  padding: 14px 16px;
+  margin: 0;
+  border-radius: 0;
+  border: 0;
+  animation: none;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.message.user,
+.message.assistant {
+  align-self: stretch;
 }
 
 .message.user {
-  align-self: flex-end;
-  background: #3b2f28;
+  background: #111827;
   color: #fff;
-  border: none;
+  border-radius: 4px;
 }
 
 .message.assistant {
-  align-self: flex-start;
   background: var(--c-surface);
-  border: 1px solid var(--c-border);
   color: var(--c-text);
+}
+
+.message + .message {
+  border-top: 1px solid var(--c-border);
 }
 
 .message.waiting {
@@ -629,6 +627,7 @@ const formatTime = (timestamp: number) => {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--c-text-muted);
+  opacity: 0.6;
 }
 
 .message.user .role-label {
@@ -641,7 +640,7 @@ const formatTime = (timestamp: number) => {
 
 .timestamp {
   font-size: 0.7rem;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .message-text {
@@ -654,9 +653,13 @@ const formatTime = (timestamp: number) => {
 .tool-calls {
   margin-bottom: 8px;
   padding: 8px;
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.04);
   border-radius: 6px;
   font-size: 0.85rem;
+}
+
+.message.user .tool-calls {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .tool-call-header {
@@ -673,7 +676,7 @@ const formatTime = (timestamp: number) => {
 .tool-name {
   font-weight: 600;
   font-family: monospace;
-  color: #4a6cf7;
+  color: var(--c-accent);
 }
 
 .message.user .tool-name {
@@ -715,30 +718,31 @@ const formatTime = (timestamp: number) => {
 .input-container {
   display: flex;
   gap: 8px;
-  align-items: flex-end;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 14px;
-  padding: 10px;
-  box-shadow: var(--shadow-warm-md);
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
 }
 
 .user-input {
   flex: 1;
   padding: 10px 12px;
-  /* border: 1px solid var(--c-border); */
-  border-radius: 10px;
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
   font-size: 0.9rem;
   font-family: inherit;
   resize: none;
   background: var(--c-surface);
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: none;
+  transition: border-color 0.12s ease;
 }
 
 .user-input:focus {
   outline: none;
   border-color: var(--c-accent);
-  box-shadow: 0 0 0 3px rgba(197, 139, 84, 0.25);
+  box-shadow: none;
 }
 
 .user-input:disabled {
@@ -747,7 +751,7 @@ const formatTime = (timestamp: number) => {
 }
 
 .send-btn {
-  padding: 10px 18px;
+  padding: 10px 14px;
   background: var(--c-primary);
   border: 1px solid var(--c-primary);
   border-radius: 10px;
@@ -755,8 +759,8 @@ const formatTime = (timestamp: number) => {
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-  box-shadow: var(--shadow-warm-sm);
+  transition: background 0.15s ease;
+  box-shadow: none;
   white-space: nowrap;
 }
 
@@ -764,13 +768,8 @@ const formatTime = (timestamp: number) => {
   background: var(--c-primary-600);
 }
 
-.send-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
 .send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  box-shadow: none;
 }
 </style>
