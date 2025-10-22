@@ -339,8 +339,16 @@ watch(selectedMidiDevice, (deviceId) => {
     <div class="piano-roll-row">
       <section class="piano-roll-card">
         <div class="controls">
-          <button class="btn btn-primary" @click="handlePlayClick" :disabled="isPlaying || !hasNotes">Play</button>
-          <button class="btn btn-danger" @click="handleStopClick" :disabled="!isPlaying">Stop</button>
+          <button
+            class="play-toggle"
+            :class="{ playing: isPlaying }"
+            @click="isPlaying ? handleStopClick() : handlePlayClick()"
+            :disabled="!isPlaying && !hasNotes"
+            :aria-pressed="isPlaying"
+            :title="isPlaying ? 'Stop' : 'Play'"
+          >
+            {{ isPlaying ? 'Stop' : 'Play' }}
+          </button>
           <span class="status" :class="{ playing: isPlaying }">{{ statusLabel }}</span>
           <span class="separator">|</span>
           <label class="midi-control">
@@ -406,10 +414,10 @@ watch(selectedMidiDevice, (deviceId) => {
 }
 
 section {
-  background: #ffffff;
-  border: 1px solid #d5d9e6;
-  border-radius: 16px;
-  box-shadow: 0 18px 36px rgba(12, 14, 32, 0.12);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 14px;
+  box-shadow: none;
   padding: 20px;
   box-sizing: border-box;
 }
@@ -457,15 +465,53 @@ section {
   padding: 6px 10px;
 }
 
+.play-toggle {
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--c-primary);
+  color: #fff;
+  border: 1px solid var(--c-primary);
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
 
+.play-toggle:hover:not(:disabled) { 
+  background: var(--c-primary-600); 
+}
+
+.play-toggle:active:not(:disabled) { 
+  background: var(--c-primary-700); 
+}
+
+.play-toggle:focus-visible { 
+  outline: none; 
+  box-shadow: 0 0 0 3px rgba(197, 139, 84, 0.25);
+}
+
+.play-toggle.playing {
+  background: var(--c-danger);
+  border-color: var(--c-danger);
+}
+
+.play-toggle.playing:hover { 
+  filter: brightness(0.95); 
+}
+
+.play-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .status {
   font-weight: 600;
-  color: #3a3f55;
+  color: var(--c-text-muted);
 }
 
 .status.playing {
-  color: #2f7f48;
+  color: var(--c-success);
 }
 
 .note {

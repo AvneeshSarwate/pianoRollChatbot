@@ -533,9 +533,9 @@ const formatTime = (timestamp: number) => {
   flex: 1;
   overflow-y: auto;
   padding: 12px;
-  background: #f9fafb;
-  border: 1px solid #e0e4f0;
-  border-radius: 8px;
+  /* background: var(--c-surface-subtle); */
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -545,7 +545,7 @@ const formatTime = (timestamp: number) => {
 
 .empty-state {
   text-align: center;
-  color: #666;
+  color: var(--c-text-muted);
   padding: 20px;
 }
 
@@ -556,10 +556,10 @@ const formatTime = (timestamp: number) => {
 
 .examples {
   text-align: left;
-  background: #fff;
+  background: var(--c-surface);
   padding: 16px;
-  border-radius: 8px;
-  border: 1px solid #e0e4f0;
+  border-radius: 10px;
+  border: 1px solid var(--c-border);
 }
 
 .examples p {
@@ -599,15 +599,16 @@ const formatTime = (timestamp: number) => {
 
 .message.user {
   align-self: flex-end;
-  background: linear-gradient(135deg, #4a6cf7, #667aff);
-  color: white;
+  background: #3b2f28;
+  color: #fff;
+  border: none;
 }
 
 .message.assistant {
   align-self: flex-start;
-  background: #ffffff;
-  border: 1px solid #e0e4f0;
-  color: #2f3542;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
 }
 
 .message.waiting {
@@ -627,14 +628,15 @@ const formatTime = (timestamp: number) => {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  color: var(--c-text-muted);
 }
 
 .message.user .role-label {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .message.assistant .role-label {
-  color: #4a6cf7;
+  color: var(--c-accent);
 }
 
 .timestamp {
@@ -714,47 +716,56 @@ const formatTime = (timestamp: number) => {
   display: flex;
   gap: 8px;
   align-items: flex-end;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: var(--shadow-warm-md);
 }
 
 .user-input {
   flex: 1;
   padding: 10px 12px;
-  border: 1px solid #d5d9e6;
-  border-radius: 8px;
+  /* border: 1px solid var(--c-border); */
+  border-radius: 10px;
   font-size: 0.9rem;
   font-family: inherit;
   resize: none;
-  transition: border-color 0.15s ease;
+  background: var(--c-surface);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
 
 .user-input:focus {
   outline: none;
-  border-color: #4a6cf7;
-  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px rgba(197, 139, 84, 0.25);
 }
 
 .user-input:disabled {
-  background: #f5f6f9;
+  background: #f3eee8;
   cursor: not-allowed;
 }
 
 .send-btn {
-  padding: 10px 24px;
-  background: linear-gradient(135deg, #4a6cf7, #667aff);
-  border: none;
-  border-radius: 8px;
-  color: white;
+  padding: 10px 18px;
+  background: var(--c-primary);
+  border: 1px solid var(--c-primary);
+  border-radius: 10px;
+  color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 4px 12px rgba(74, 108, 247, 0.2);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  box-shadow: var(--shadow-warm-sm);
   white-space: nowrap;
 }
 
 .send-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(74, 108, 247, 0.3);
+  background: var(--c-primary-600);
+}
+
+.send-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .send-btn:disabled {

@@ -222,60 +222,47 @@ const setParamInput = (paramName: string, value: number) => {
   font-style: italic;
 }
 
-.template-btn {
-  background: transparent;
-  border: 1px solid #d5d9e6;
-  border-radius: 6px;
-  padding: 4px 12px;
-  font-size: 0.85rem;
-  color: #666;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
 
-.template-btn:hover {
-  background: #f5f6f9;
-  border-color: #999;
-}
 
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   overflow-x: auto;
   padding: 4px 0;
-  margin-bottom: -1px;
+  margin-bottom: 12px;
 }
 
 .tab {
-  background: #f5f6f9;
-  border: 1px solid #e0e4f0;
-  border-radius: 6px 6px 0 0;
-  padding: 8px 16px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--c-surface-subtle);
+  color: var(--c-text-muted);
+  border: 1px solid var(--c-border);
+  border-radius: 9999px;
+  padding: 6px 14px;
   font-size: 0.9rem;
-  color: #666;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   white-space: nowrap;
-  position: relative;
 }
 
 .tab:hover {
-  background: #e8eaf0;
+  background: #efe6dd;
 }
 
 .tab.active {
-  background: #fff;
-  color: #303553;
-  font-weight: 600;
-  border-bottom-color: #fff;
+  background: var(--c-primary);
+  color: #fff;
+  border-color: var(--c-primary);
 }
 
 .tab.valid {
-  border-color: #28a745;
+  box-shadow: inset 0 0 0 1px #2e7d32;
 }
 
 .valid-indicator {
-  color: #28a745;
+  color: #2e7d32;
   margin-left: 6px;
   font-weight: bold;
 }
@@ -285,9 +272,9 @@ const setParamInput = (paramName: string, value: number) => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: #fff;
-  border: 1px solid #e0e4f0;
-  border-radius: 0 8px 8px 8px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
   padding: 16px;
 }
 
@@ -331,23 +318,7 @@ const setParamInput = (paramName: string, value: number) => {
   color: #856404;
 }
 
-.validate-btn {
-  background: linear-gradient(135deg, #4a6cf7, #667aff);
-  border: none;
-  border-radius: 6px;
-  color: white;
-  padding: 6px 18px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 4px 12px rgba(74, 108, 247, 0.2);
-}
 
-.validate-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(74, 108, 247, 0.3);
-}
 
 .errors {
   background: #ffe0e0;
@@ -464,45 +435,5 @@ const setParamInput = (paramName: string, value: number) => {
   padding-top: 8px;
 }
 
-.apply-btn {
-  background: linear-gradient(135deg, #28a745, #34d058);
-  border: none;
-  border-radius: 6px;
-  color: white;
-  padding: 8px 20px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
-  flex: 1;
-}
 
-.apply-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(40, 167, 69, 0.3);
-}
-
-.undo-btn,
-.redo-btn {
-  background: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 8px 16px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.undo-btn:hover:not(:disabled),
-.redo-btn:hover:not(:disabled) {
-  background: #e0e0e0;
-}
-
-.undo-btn:disabled,
-.redo-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 </style>
