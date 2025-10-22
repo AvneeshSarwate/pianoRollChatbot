@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import * as Tone from 'tone'
 import PianoRollRoot from './pianoRoll/PianoRollRoot.vue'
 import ClaudeChat from './ClaudeChat.vue'
@@ -7,6 +7,7 @@ import TransformWorkbench from './TransformWorkbench.vue'
 import { createTransformRegistry } from '../composables/useTransformRegistry'
 import type { NoteDataInput, PianoRollState } from './pianoRoll/pianoRollState'
 import type { TimelineNote, TimelineState } from '../types/timeline'
+import { MIDIManager } from './pianoRoll/midiManager'
 
 const START_DELAY = 0.05
 
@@ -60,6 +61,12 @@ const statusLabel = computed(() => (isPlaying.value ? 'Playing' : 'Stopped'))
 const hasNotes = computed(() => timelineState.notes.length > 0)
 const queueDisplay = computed(() => timelineState.queuePosition.toFixed(2))
 
+const midiEnabled = ref(false)
+const midiDevices = ref<Array<{ id: string, name: string }>>([])
+const selectedMidiDevice = ref<string>('')
+let midiManager: MIDIManager | null = null
+const activeMidiNotes = new Set<number>()
+
 let synth: Tone.PolySynth<Tone.Synth> | null = null
 let part: Tone.Part<TimedScheduledEvent> | null = null
 let rafId: number | null = null
@@ -112,6 +119,14 @@ const stopPlayback = (resetToQueue = true) => {
 
   clearAnimation()
   isPlaying.value = false
+
+  // Send MIDI note off for any active notes
+  if (midiManager) {
+    activeMidiNotes.forEach(pitch => {
+      midiManager?.sendNoteOff(pitch)
+    })
+    activeMidiNotes.clear()
+  }
 
   if (resetToQueue) {
     const target = pianoRollRef.value?.getPlayStartPosition?.() ?? timelineState.queuePosition ?? 0
@@ -175,8 +190,25 @@ const startPlayback = async () => {
   clearTransportSchedules()
 
   part = new Tone.Part<TimedScheduledEvent>((time, event) => {
-    const noteName = Tone.Frequency(event.note.pitch, 'midi').toNote()
-    synth?.triggerAttackRelease(noteName, event.duration, time, event.velocity)
+    // Only play built-in synth if MIDI output is disabled
+    if (!midiEnabled.value) {
+      const noteName = Tone.Frequency(event.note.pitch, 'midi').toNote()
+      synth?.triggerAttackRelease(noteName, event.duration, time, event.velocity)
+    }
+    
+    // Send MIDI note on
+    if (midiEnabled.value && midiManager) {
+      const pitch = event.note.pitch
+      midiManager.sendNoteOn(pitch, event.velocity)
+      activeMidiNotes.add(pitch)
+      
+      // Schedule MIDI note off
+      const manager = midiManager
+      Tone.Transport.scheduleOnce(() => {
+        manager?.sendNoteOff(pitch)
+        activeMidiNotes.delete(pitch)
+      }, `+${event.duration}`)
+    }
   }, scheduledEvents)
 
   part.start(0)
@@ -254,9 +286,25 @@ const transformRegistry = createTransformRegistry({
   getGrid
 })
 
-onMounted(() => {
+onMounted(async () => {
   Tone.Transport.loop = false
   Tone.Transport.bpm.value = 120
+
+  // Initialize MIDI
+  try {
+    midiManager = new MIDIManager()
+    await midiManager.initialize()
+    midiDevices.value = midiManager.getAvailableDevices()
+    
+    if (midiDevices.value.length > 0) {
+      selectedMidiDevice.value = midiDevices.value[0]?.id || ''
+      if (selectedMidiDevice.value) {
+        midiManager.selectDevice(selectedMidiDevice.value)
+      }
+    }
+  } catch (error) {
+    console.warn('MIDI not available:', error)
+  }
 
   nextTick(() => {
     if (!pianoRollRef.value) return
@@ -271,6 +319,18 @@ onBeforeUnmount(() => {
   clearTransportSchedules()
   synth?.dispose()
   synth = null
+  midiManager?.disconnect()
+  midiManager = null
+})
+
+watch(midiEnabled, (enabled) => {
+  midiManager?.setEnabled(enabled)
+})
+
+watch(selectedMidiDevice, (deviceId) => {
+  if (deviceId && midiManager) {
+    midiManager.selectDevice(deviceId)
+  }
 })
 </script>
 
@@ -282,6 +342,19 @@ onBeforeUnmount(() => {
           <button @click="handlePlayClick" :disabled="isPlaying || !hasNotes">Play</button>
           <button @click="handleStopClick" :disabled="!isPlaying">Stop</button>
           <span class="status" :class="{ playing: isPlaying }">{{ statusLabel }}</span>
+          <span class="separator">|</span>
+          <label class="midi-control">
+            <input type="checkbox" v-model="midiEnabled" :disabled="midiDevices.length === 0" />
+            MIDI Out
+          </label>
+          <label v-if="midiDevices.length > 0" class="midi-control">
+            Device:
+            <select v-model="selectedMidiDevice" :disabled="!midiEnabled">
+              <option v-for="device in midiDevices" :key="device.id" :value="device.id">
+                {{ device.name }}
+              </option>
+            </select>
+          </label>
         </div>
         <p class="note">Use the green queue playhead inside the roll to choose a start point, then press play.</p>
         <p class="meta">Queue start (quarter notes): <span>{{ queueDisplay }}</span></p>

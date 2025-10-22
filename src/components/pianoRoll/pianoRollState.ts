@@ -1,5 +1,6 @@
 import Konva from 'konva'
 import type { CommandStack } from './commandStack'
+import type { MIDIManager, MIDIDevice } from './midiManager'
 
 // Pure data - NO Konva references
 export type NoteData = {
@@ -129,6 +130,14 @@ export interface PianoRollState {
 
   // Optional callback to notify external listeners when state changes outside command stack
   notifyExternalChange?: () => void
+
+  // MIDI state
+  midi: {
+    manager?: MIDIManager
+    enabled: boolean
+    selectedDeviceId: string | null
+    availableDevices: MIDIDevice[]
+  }
 }
 
 export const createPianoRollState = (): PianoRollState => {
@@ -228,6 +237,13 @@ export const createPianoRollState = (): PianoRollState => {
       element: undefined
     },
 
-    notifyExternalChange: undefined
+    notifyExternalChange: undefined,
+
+    midi: {
+      manager: undefined,
+      enabled: false,
+      selectedDeviceId: null,
+      availableDevices: []
+    }
   }
 }
